@@ -1,13 +1,8 @@
-"""Webots adaptive navigation controller.
-
-Reads sensors, classifies terrain, adjusts speed accordingly.
-Runs continuously until simulation is stopped.
-"""
+"""Webots A* navigation controller — uses global path planning with terrain cost."""
 
 import sys
 import os
 import math
-import time as pytime
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
@@ -17,10 +12,11 @@ from controller import Robot  # type: ignore
 from src.perception.terrain_features import extract_features
 from src.classification.rule_classifier import TerrainClassifier, TerrainType
 from src.control.adaptive_params import get_params
+from src.planning.astar import AStarPlanner
 
 import numpy as np
 
-
+TARGETS = [
 TARGETS = [
     (2.0, 0.0),
     (2.0, 2.0),
@@ -30,53 +26,45 @@ TARGETS = [
     (0.0, 0.0),
 ]
 DISTANCE_TOLERANCE = 0.5
+REPLAN_INTERVAL = 200
 
 
 def get_bearing(compass_values):
-    """Convert compass values to bearing angle in radians (0 = north/+x)."""
-    x, y = compass_values[0], compass_values[1]
-    return math.atan2(x, y)
+    return math.atan2(compass_values[0], compass_values[1])
 
 
 def compute_steering(current_pos, target, bearing):
-    """Compute left/right wheel speed differential to steer toward target."""
     dx = target[0] - current_pos[0]
     dy = target[1] - current_pos[1]
     target_angle = math.atan2(dx, dy)
-
     angle_diff = target_angle - bearing
     while angle_diff > math.pi:
         angle_diff -= 2 * math.pi
     while angle_diff < -math.pi:
         angle_diff += 2 * math.pi
-
     return angle_diff
 
 
-def lidar_to_height_grid(lidar_ranges, num_layers=1):
-    """Convert lidar range data to a simulated height grid for feature extraction.
-    For single-layer 2D lidar, we estimate terrain roughness from range variance."""
+def lidar_to_height_grid(lidar_ranges):
     ranges = np.array(lidar_ranges, dtype=np.float64)
     ranges = ranges[np.isfinite(ranges)]
     if len(ranges) < 10:
         return np.zeros((4, 4))
-
     sector_size = len(ranges) // 16
     if sector_size == 0:
         return np.zeros((4, 4))
-
     heights = []
     for i in range(16):
         sector = ranges[i * sector_size:(i + 1) * sector_size]
         if len(sector) > 0:
-            min_range = np.min(sector)
-            heights.append(min_range)
+            heights.append(np.min(sector))
         else:
             heights.append(0.0)
-
+    for i in range(16):
+        sector = ranges[i * sector_size:(i + 1) * sector_size]
+        heights.append(np.min(sector))
     grid = np.array(heights).reshape(4, 4)
-    grid = grid - np.mean(grid)
-    return grid
+    return grid - np.mean(grid)
 
 
 def main():
@@ -105,14 +93,18 @@ def main():
         motors.append(m)
 
     classifier = TerrainClassifier()
+    planner = AStarPlanner(grid_size=0.5, world_size=20.0)
+
     target_idx = 0
     step_count = 0
+    path = None
+    path_idx = 0
 
     log_path = os.path.join(PROJECT_ROOT, "data", "logs", "navigation.csv")
     log_file = open(log_path, "w", encoding="utf-8")
     log_file.write("step,time_s,x,y,z,roll,pitch,yaw,terrain,speed,target_idx,dist_to_target\n")
 
-    print("[adaptive_navigator] Started. Navigating through waypoints...")
+    print("[astar_navigator] Started. Planning paths with A*...")
 
     while robot.step(timestep) != -1:
         step_count += 1
@@ -130,26 +122,41 @@ def main():
         terrain = classifier.classify(features)
         params = get_params(terrain)
 
-        target = TARGETS[target_idx]
-        dx = target[0] - pos[0]
-        dy = target[1] - pos[1]
-        dist = math.sqrt(dx * dx + dy * dy)
+        final_target = TARGETS[target_idx]
+        dist_to_final = math.sqrt((final_target[0] - pos[0]) ** 2 + (final_target[1] - pos[1]) ** 2)
 
-        if dist < DISTANCE_TOLERANCE:
+        if dist_to_final < DISTANCE_TOLERANCE:
             target_idx = (target_idx + 1) % len(TARGETS)
-            target = TARGETS[target_idx]
-            print(f"[step {step_count}] Reached waypoint! Next target: {target}")
-            dx = target[0] - pos[0]
-            dy = target[1] - pos[1]
-            dist = math.sqrt(dx * dx + dy * dy)
+            final_target = TARGETS[target_idx]
+            path = None
+            print(f"[step {step_count}] Reached waypoint! Next: {final_target}")
+
+        if path is None or step_count % REPLAN_INTERVAL == 0:
+            planner.update_cost_map(height_grid, terrain.value)
+            new_path = planner.plan((pos[0], pos[1]), final_target)
+            if new_path and len(new_path) >= 2:
+                path = new_path
+                path_idx = 1
+            else:
+                path = [final_target]
+                path_idx = 0
+
+        if path and path_idx < len(path):
+            current_waypoint = path[path_idx]
+            dist_to_wp = math.sqrt((current_waypoint[0] - pos[0]) ** 2 +
+                                   (current_waypoint[1] - pos[1]) ** 2)
+            if dist_to_wp < DISTANCE_TOLERANCE * 2 and path_idx < len(path) - 1:
+                path_idx += 1
+                current_waypoint = path[path_idx]
+        else:
+            current_waypoint = final_target
 
         bearing = get_bearing(compass_vals)
-        angle_diff = compute_steering(pos, target, bearing)
+        angle_diff = compute_steering(pos, current_waypoint, bearing)
 
         turn = angle_diff * params.turn_gain
         left_speed = params.max_speed - turn
         right_speed = params.max_speed + turn
-
         left_speed = max(-params.max_speed, min(params.max_speed, left_speed))
         right_speed = max(-params.max_speed, min(params.max_speed, right_speed))
 
@@ -161,16 +168,16 @@ def main():
         if step_count % 10 == 0:
             log_file.write(f"{step_count},{sim_time:.2f},{pos[0]:.4f},{pos[1]:.4f},{pos[2]:.4f},"
                            f"{rpy[0]:.4f},{rpy[1]:.4f},{rpy[2]:.4f},"
-                           f"{terrain.value},{params.max_speed:.1f},{target_idx},{dist:.3f}\n")
+                           f"{terrain.value},{params.max_speed:.1f},{target_idx},{dist_to_final:.3f}\n")
             log_file.flush()
 
         if step_count % 100 == 1:
             print(f"[step {step_count}] pos=({pos[0]:.2f},{pos[1]:.2f}) "
                   f"terrain={terrain.value} speed={params.max_speed:.1f} "
-                  f"target[{target_idx}]={target} dist={dist:.2f}")
+                  f"path_len={len(path) if path else 0} target[{target_idx}] dist={dist_to_final:.2f}")
 
     log_file.close()
-    print("[adaptive_navigator] Simulation ended.")
+    print("[astar_navigator] Simulation ended.")
 
 
 if __name__ == "__main__":
