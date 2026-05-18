@@ -25,135 +25,187 @@ plt.rcParams["font.size"] = 10
 
 
 def fig1_system_architecture():
-    """图1 系统总体架构图"""
-    fig, ax = plt.subplots(figsize=(10, 6))
+    """图1 系统总体架构图 — 三层架构，组件不与层名重叠"""
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.axis('off')
-
-    # Layers
-    layers = [
-        {"name": "感知层\nPerception Layer", "y": 0.8, "color": "#E3F2FD"},
-        {"name": "决策层\nDecision Layer", "y": 0.5, "color": "#FFF3E0"},
-        {"name": "执行层\nExecution Layer", "y": 0.2, "color": "#E8F5E9"},
-    ]
-
-    for layer in layers:
-        rect = mpatches.FancyBboxPatch(
-            (0.1, layer["y"] - 0.08), 0.8, 0.12,
-            boxstyle="round,pad=0.01",
-            edgecolor="black", facecolor=layer["color"], linewidth=2
-        )
-        ax.add_patch(rect)
-        ax.text(0.5, layer["y"], layer["name"], ha="center", va="center",
-                fontsize=12, fontweight="bold")
-
-    # Components in each layer
-    components = [
-        {"text": "激光雷达\nLidar", "x": 0.2, "y": 0.8},
-        {"text": "GPS", "x": 0.35, "y": 0.8},
-        {"text": "IMU", "x": 0.5, "y": 0.8},
-        {"text": "罗盘\nCompass", "x": 0.65, "y": 0.8},
-        {"text": "地形分类\nClassifier", "x": 0.25, "y": 0.5},
-        {"text": "路径规划\nPlanning", "x": 0.5, "y": 0.5},
-        {"text": "参数自适应\nAdaptive", "x": 0.75, "y": 0.5},
-        {"text": "差速控制\nDifferential", "x": 0.35, "y": 0.2},
-        {"text": "电机驱动\nMotor", "x": 0.65, "y": 0.2},
-    ]
-
-    for comp in components:
-        ax.text(comp["x"], comp["y"], comp["text"], ha="center", va="center",
-                fontsize=9, bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-
-    # Arrows
-    ax.annotate("", xy=(0.5, 0.68), xytext=(0.5, 0.74),
-                arrowprops=dict(arrowstyle="->", lw=2, color="black"))
-    ax.annotate("", xy=(0.5, 0.38), xytext=(0.5, 0.44),
-                arrowprops=dict(arrowstyle="->", lw=2, color="black"))
-
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.set_title("图1 系统总体架构图\nFig.1 System Architecture", fontsize=14, fontweight="bold", pad=20)
+
+    # Layer backgrounds
+    layer_defs = [
+        ("感知层 Perception", 0.73, 0.95, "#E3F2FD", "#1565C0"),
+        ("决策层 Decision", 0.38, 0.70, "#FFF3E0", "#E65100"),
+        ("执行层 Execution", 0.03, 0.35, "#E8F5E9", "#2E7D32"),
+    ]
+    for name, yb, yt, fc, ec in layer_defs:
+        rect = mpatches.FancyBboxPatch(
+            (0.04, yb), 0.92, yt - yb,
+            boxstyle="round,pad=0.01",
+            edgecolor=ec, facecolor=fc, linewidth=2, alpha=0.35
+        )
+        ax.add_patch(rect)
+        ax.text(0.96, (yb + yt) / 2, name, ha="right", va="center",
+                fontsize=9, fontweight="bold", color=ec, rotation=-90)
+
+    # Helper to draw a component box
+    def comp_box(x, y, text, fc="white", ec="gray", fs=9):
+        box = mpatches.FancyBboxPatch(
+            (x - 0.09, y - 0.035), 0.18, 0.07,
+            boxstyle="round,pad=0.008", edgecolor=ec, facecolor=fc, linewidth=1.5
+        )
+        ax.add_patch(box)
+        ax.text(x, y, text, ha="center", va="center", fontsize=fs)
+
+    # Perception layer components
+    comp_box(0.15, 0.84, "2D激光雷达\nLidar", "#BBDEFB", "#1565C0")
+    comp_box(0.38, 0.84, "IMU\n惯性单元", "#BBDEFB", "#1565C0")
+    comp_box(0.61, 0.84, "GPS\n全局定位", "#BBDEFB", "#1565C0")
+    comp_box(0.84, 0.84, "罗盘\nCompass", "#BBDEFB", "#1565C0")
+
+    # Decision layer components
+    comp_box(0.18, 0.60, "特征提取\n坡度/粗糙度", "#FFE0B2", "#E65100")
+    comp_box(0.45, 0.60, "地形分类器\n规则判定", "#FFE0B2", "#E65100")
+    comp_box(0.72, 0.60, "参数自适应\nVmax/Kp", "#FFE0B2", "#E65100")
+    comp_box(0.45, 0.45, "A*路径规划\n全局航点", "#FFE0B2", "#E65100")
+    comp_box(0.18, 0.45, "TSP排序\n2-opt优化", "#FFE0B2", "#E65100")
+
+    # Execution layer components
+    comp_box(0.30, 0.22, "差速转向控制\n比例+旋转", "#C8E6C9", "#2E7D32")
+    comp_box(0.60, 0.22, "四轮电机\nVL / VR", "#C8E6C9", "#2E7D32")
+    comp_box(0.82, 0.10, "Webots引擎\nODE物理", "#C8E6C9", "#2E7D32")
+
+    # Arrows: perception -> decision
+    for sx in [0.15, 0.38]:
+        ax.annotate("", xy=(0.18, 0.635), xytext=(sx, 0.805),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#1565C0"))
+    ax.annotate("", xy=(0.45, 0.635), xytext=(0.38, 0.805),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#1565C0"))
+    ax.annotate("", xy=(0.45, 0.635), xytext=(0.61, 0.805),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#1565C0"))
+
+    # Decision internal arrows
+    ax.annotate("", xy=(0.36, 0.60), xytext=(0.27, 0.60),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#E65100"))
+    ax.annotate("", xy=(0.63, 0.60), xytext=(0.54, 0.60),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#E65100"))
+    ax.annotate("", xy=(0.45, 0.525), xytext=(0.45, 0.565),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#E65100"))
+    ax.annotate("", xy=(0.36, 0.45), xytext=(0.27, 0.45),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#E65100"))
+
+    # Decision -> execution
+    ax.annotate("", xy=(0.30, 0.255), xytext=(0.45, 0.415),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#2E7D32"))
+    ax.annotate("", xy=(0.38, 0.255), xytext=(0.72, 0.565),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#2E7D32"))
+
+    # Execution internal
+    ax.annotate("", xy=(0.51, 0.22), xytext=(0.39, 0.22),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#2E7D32"))
+    ax.annotate("", xy=(0.76, 0.13), xytext=(0.66, 0.19),
+                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#2E7D32"))
 
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGURES_DIR, "图1_系统总体架构图.png"), bbox_inches="tight")
+    plt.savefig(os.path.join(FIGURES_DIR, "图1_系统总体架构图.png"), bbox_inches="tight",
+                facecolor="white")
     plt.close()
     print("[OK] 图1_系统总体架构图.png")
 
 
 def fig2_terrain_classification_flowchart():
-    """图2 地形分类算法流程图"""
-    fig, ax = plt.subplots(figsize=(8, 10))
+    """图2 地形分类算法流程图 — 菱形加大，间距拉开"""
+    fig, ax = plt.subplots(figsize=(10, 13))
     ax.axis('off')
-
-    boxes = [
-        {"text": "开始\nStart", "y": 0.95, "color": "#4CAF50"},
-        {"text": "读取传感器数据\nLidar + IMU", "y": 0.85, "color": "#E3F2FD"},
-        {"text": "提取地形特征\nslope, roughness, height", "y": 0.75, "color": "#E3F2FD"},
-        {"text": "提取IMU姿态\npitch, roll", "y": 0.65, "color": "#FFF3E0"},
-        {"text": "IMU pitch ≥ 3°\n且 roughness < 0.05?", "y": 0.52, "color": "#FFEB3B", "shape": "diamond"},
-        {"text": "输出: 斜坡\nSlope", "y": 0.52, "color": "#FF9800", "x": 0.7},
-        {"text": "roughness ≥ 0.05\n或 roll ≥ 2°?", "y": 0.39, "color": "#FFEB3B", "shape": "diamond"},
-        {"text": "输出: 凹凸\nRough", "y": 0.39, "color": "#F44336", "x": 0.7},
-        {"text": "slope < 5° 且\nroughness < 0.02?", "y": 0.26, "color": "#FFEB3B", "shape": "diamond"},
-        {"text": "输出: 平坦\nFlat", "y": 0.26, "color": "#4CAF50", "x": 0.7},
-        {"text": "输出: 过渡区\nTransition", "y": 0.13, "color": "#9C27B0"},
-        {"text": "结束\nEnd", "y": 0.03, "color": "#4CAF50"},
-    ]
-
-    for box in boxes:
-        x = box.get("x", 0.5)
-        y = box["y"]
-        shape = box.get("shape", "rect")
-
-        if shape == "diamond":
-            points = np.array([[x, y+0.04], [x+0.15, y], [x, y-0.04], [x-0.15, y]])
-            poly = mpatches.Polygon(points, closed=True, edgecolor="black",
-                                    facecolor=box["color"], linewidth=1.5)
-            ax.add_patch(poly)
-        else:
-            rect = mpatches.FancyBboxPatch(
-                (x - 0.15, y - 0.03), 0.3, 0.06,
-                boxstyle="round,pad=0.005",
-                edgecolor="black", facecolor=box["color"], linewidth=1.5
-            )
-            ax.add_patch(rect)
-
-        ax.text(x, y, box["text"], ha="center", va="center", fontsize=9)
-
-    # Arrows
-    arrows = [
-        (0.5, 0.92, 0.5, 0.88),
-        (0.5, 0.82, 0.5, 0.78),
-        (0.5, 0.72, 0.5, 0.68),
-        (0.5, 0.62, 0.5, 0.56),
-        (0.5, 0.48, 0.5, 0.43),
-        (0.5, 0.35, 0.5, 0.30),
-        (0.5, 0.22, 0.5, 0.16),
-        (0.5, 0.10, 0.5, 0.06),
-        # Yes arrows
-        (0.65, 0.52, 0.7, 0.52),
-        (0.65, 0.39, 0.7, 0.39),
-        (0.65, 0.26, 0.7, 0.26),
-    ]
-
-    for x1, y1, x2, y2 in arrows:
-        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                    arrowprops=dict(arrowstyle="->", lw=1.5, color="black"))
-
-    # Labels
-    ax.text(0.58, 0.52, "是\nYes", fontsize=8, color="green")
-    ax.text(0.58, 0.39, "是\nYes", fontsize=8, color="green")
-    ax.text(0.58, 0.26, "是\nYes", fontsize=8, color="green")
-    ax.text(0.45, 0.45, "否\nNo", fontsize=8, color="red")
-    ax.text(0.45, 0.32, "否\nNo", fontsize=8, color="red")
-    ax.text(0.45, 0.19, "否\nNo", fontsize=8, color="red")
-
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.set_title("图2 地形分类算法流程图\nFig.2 Terrain Classification Flowchart",
-                 fontsize=14, fontweight="bold", pad=20)
+
+    def draw_rect(x, y, text, color, fs=9):
+        rect = mpatches.FancyBboxPatch(
+            (x - 0.14, y - 0.025), 0.28, 0.05,
+            boxstyle="round,pad=0.006", edgecolor="black",
+            facecolor=color, linewidth=1.5
+        )
+        ax.add_patch(rect)
+        ax.text(x, y, text, ha="center", va="center", fontsize=fs)
+
+    def draw_diamond(x, y, text, color, fs=8):
+        hw, hh = 0.18, 0.045
+        points = np.array([[x, y + hh], [x + hw, y], [x, y - hh], [x - hw, y]])
+        poly = mpatches.Polygon(points, closed=True, edgecolor="black",
+                                facecolor=color, linewidth=1.5)
+        ax.add_patch(poly)
+        ax.text(x, y, text, ha="center", va="center", fontsize=fs)
+
+    def draw_output(x, y, text, color, fs=9):
+        rect = mpatches.FancyBboxPatch(
+            (x - 0.10, y - 0.022), 0.20, 0.044,
+            boxstyle="round,pad=0.005", edgecolor="black",
+            facecolor=color, linewidth=1.5
+        )
+        ax.add_patch(rect)
+        ax.text(x, y, text, ha="center", va="center", fontsize=fs, fontweight="bold",
+                color="white")
+
+    # Vertical flow positions
+    y_start = 0.95
+    y_read = 0.87
+    y_feat = 0.79
+    y_imu = 0.71
+    y_d1 = 0.61
+    y_d2 = 0.47
+    y_d3 = 0.33
+    y_out_trans = 0.20
+    y_end = 0.10
+
+    cx = 0.42  # center x for main flow
+    ox = 0.78  # output x (right side)
+
+    # Nodes
+    draw_rect(cx, y_start, "开始", "#4CAF50", 10)
+    draw_rect(cx, y_read, "读取传感器数据 (Lidar + IMU + GPS)", "#E3F2FD")
+    draw_rect(cx, y_feat, "提取地形特征: slope, roughness, height_diff", "#E3F2FD")
+    draw_rect(cx, y_imu, "提取IMU姿态: pitch, roll", "#FFF3E0")
+
+    draw_diamond(cx, y_d1, "pitch>=3 且\nroughness<0.05 ?", "#FFEB3B", 8)
+    draw_output(ox, y_d1, "斜坡 Slope", "#FF9800")
+
+    draw_diamond(cx, y_d2, "roughness>=0.05\n或 roll>=2 ?", "#FFEB3B", 8)
+    draw_output(ox, y_d2, "凹凸 Rough", "#F44336")
+
+    draw_diamond(cx, y_d3, "slope<5 且\nroughness<0.02\n且 pitch<3 ?", "#FFEB3B", 8)
+    draw_output(ox, y_d3, "平坦 Flat", "#4CAF50")
+
+    draw_output(cx, y_out_trans, "过渡区 Transition", "#9C27B0")
+    draw_rect(cx, y_end, "结束", "#4CAF50", 10)
+
+    # Vertical arrows (main flow, "No" path)
+    v_arrows = [
+        (cx, y_start - 0.025, cx, y_read + 0.025),
+        (cx, y_read - 0.025, cx, y_feat + 0.025),
+        (cx, y_feat - 0.025, cx, y_imu + 0.025),
+        (cx, y_imu - 0.025, cx, y_d1 + 0.045),
+        (cx, y_d1 - 0.045, cx, y_d2 + 0.045),
+        (cx, y_d2 - 0.045, cx, y_d3 + 0.045),
+        (cx, y_d3 - 0.045, cx, y_out_trans + 0.022),
+        (cx, y_out_trans - 0.022, cx, y_end + 0.025),
+    ]
+    for x1, y1, x2, y2 in v_arrows:
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.5, color="black"))
+
+    # Horizontal "Yes" arrows (diamond -> output)
+    for dy in [y_d1, y_d2, y_d3]:
+        ax.annotate("", xy=(ox - 0.10, dy), xytext=(cx + 0.18, dy),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#2E7D32"))
+
+    # "Yes" / "No" labels
+    for dy in [y_d1, y_d2, y_d3]:
+        ax.text(cx + 0.20, dy + 0.015, "是", fontsize=8, color="#2E7D32", fontweight="bold")
+        ax.text(cx - 0.03, dy - 0.055, "否", fontsize=8, color="#C62828", fontweight="bold")
 
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGURES_DIR, "图2_地形分类算法流程图.png"), bbox_inches="tight")
+    plt.savefig(os.path.join(FIGURES_DIR, "图2_地形分类算法流程图.png"),
+                bbox_inches="tight", facecolor="white")
     plt.close()
     print("[OK] 图2_地形分类算法流程图.png")
 
