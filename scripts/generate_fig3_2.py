@@ -98,7 +98,7 @@ def main():
         ax.scatter([0], [0], [z_at_origin + 0.3], c="blue", s=50,
                    marker="^", zorder=10, label="Robot")
 
-    plt.tight_layout(rect=[0, 0, 1, 0.98])
+    plt.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.02, hspace=0.25, wspace=0.1)
     save_path = os.path.join(FIGURES_DIR, "图3-2_四种地形仿真场景.png")
     plt.savefig(save_path, bbox_inches="tight", facecolor="white")
     plt.close()
