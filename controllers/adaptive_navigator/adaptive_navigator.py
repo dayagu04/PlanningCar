@@ -22,35 +22,52 @@ import numpy as np
 
 
 TARGETS = [
-    (2.0, 0.0),
-    (2.0, 2.0),
-    (-2.0, 2.0),
-    (-2.0, -2.0),
-    (2.0, -2.0),
+    (8.0, 0.0),
+    (8.0, 8.0),
+    (-8.0, 8.0),
+    (-8.0, -8.0),
+    (8.0, -8.0),
     (0.0, 0.0),
 ]
-DISTANCE_TOLERANCE = 0.5
+DISTANCE_TOLERANCE = 0.8
 
 
 def get_bearing(compass_values):
-    """Convert compass values to bearing angle in radians (0 = north/+x)."""
-    x, y = compass_values[0], compass_values[1]
-    return math.atan2(x, y)
+    """Get robot heading angle in world frame (radians).
+    Compass returns north vector in robot frame.
+    Webots convention: north is +Y axis."""
+    # north vector x and y components in robot frame
+    return math.atan2(compass_values[0], compass_values[1])
 
 
 def compute_steering(current_pos, target, bearing):
-    """Compute left/right wheel speed differential to steer toward target."""
+    """Compute angle error using Webots official autopilot algorithm.
+    Returns beta: positive = need to turn left, negative = need to turn right."""
     dx = target[0] - current_pos[0]
     dy = target[1] - current_pos[1]
-    target_angle = math.atan2(dx, dy)
+    dist = math.sqrt(dx * dx + dy * dy)
+    if dist < 0.01:
+        return 0.0
 
-    angle_diff = target_angle - bearing
-    while angle_diff > math.pi:
-        angle_diff -= 2 * math.pi
-    while angle_diff < -math.pi:
-        angle_diff += 2 * math.pi
+    # Normalize direction
+    dx /= dist
+    dy /= dist
 
-    return angle_diff
+    # Webots official: robot_angle = atan2(north[0], north[1])
+    #                  target_angle = atan2(direction.v, direction.u)
+    # where direction.u = dx, direction.v = dy
+    target_angle = math.atan2(dy, dx)
+
+    # beta = mod(target - robot, 2*pi) - pi
+    beta = (target_angle - bearing) % (2 * math.pi) - math.pi
+
+    # Move singularity (from Webots example)
+    if beta > 0:
+        beta = math.pi - beta
+    else:
+        beta = -beta - math.pi
+
+    return beta
 
 
 def lidar_to_height_grid(lidar_ranges, num_layers=1):
@@ -144,11 +161,12 @@ def main():
             dist = math.sqrt(dx * dx + dy * dy)
 
         bearing = get_bearing(compass_vals)
-        angle_diff = compute_steering(pos, target, bearing)
+        beta = compute_steering(pos, target, bearing)
 
-        turn = angle_diff * params.turn_gain
-        left_speed = params.max_speed - turn
-        right_speed = params.max_speed + turn
+        # Webots official autopilot formula
+        base_speed = params.max_speed - math.pi
+        left_speed = base_speed - params.turn_gain * beta
+        right_speed = base_speed + params.turn_gain * beta
 
         left_speed = max(-params.max_speed, min(params.max_speed, left_speed))
         right_speed = max(-params.max_speed, min(params.max_speed, right_speed))

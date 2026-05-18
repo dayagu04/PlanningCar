@@ -1,33 +1,39 @@
-"""Generate terrain height data for Webots ElevationGrid nodes."""
+"""Generate terrain height data — larger scale, more realistic."""
 
 import numpy as np
 import os
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "worlds")
 
+TERRAIN_SIZE = 40
+RESOLUTION = 80
 
-def generate_slope(size=20, resolution=40, max_angle_deg=5):
+
+def generate_slope(size=TERRAIN_SIZE, resolution=RESOLUTION, max_angle_deg=5):
     """Generate a slope terrain (tilted plane)."""
     x = np.linspace(0, size, resolution)
     y = np.linspace(0, size, resolution)
     xx, _ = np.meshgrid(x, y)
     slope_rad = np.radians(max_angle_deg)
     heights = xx * np.tan(slope_rad)
+    # Smooth edges to flat
+    heights[heights < 0] = 0
     return heights
 
 
-def generate_rough(size=20, resolution=40, amplitude=0.15, frequency=3):
+def generate_rough(size=TERRAIN_SIZE, resolution=RESOLUTION, amplitude=0.2, frequency=0.5):
     """Generate rough/bumpy terrain using superimposed sine waves."""
     x = np.linspace(0, size, resolution)
     y = np.linspace(0, size, resolution)
     xx, yy = np.meshgrid(x, y)
     heights = (amplitude * np.sin(frequency * xx) * np.cos(frequency * yy)
                + amplitude * 0.5 * np.sin(frequency * 2.3 * xx + 1.0)
-               + amplitude * 0.3 * np.cos(frequency * 1.7 * yy + 0.5))
+               + amplitude * 0.3 * np.cos(frequency * 1.7 * yy + 0.5)
+               + amplitude * 0.2 * np.sin(frequency * 3.1 * xx + frequency * 1.5 * yy))
     return heights
 
 
-def generate_transition(size=20, resolution=40):
+def generate_transition(size=TERRAIN_SIZE, resolution=RESOLUTION):
     """Generate transition terrain: flat -> slope -> rough -> flat."""
     x = np.linspace(0, size, resolution)
     y = np.linspace(0, size, resolution)
@@ -35,16 +41,16 @@ def generate_transition(size=20, resolution=40):
     heights = np.zeros_like(xx)
 
     quarter = size / 4.0
-    flat1 = xx < quarter
     slope_mask = (xx >= quarter) & (xx < 2 * quarter)
     rough_mask = (xx >= 2 * quarter) & (xx < 3 * quarter)
 
-    slope_angle = np.radians(15)
+    slope_angle = np.radians(8)
     heights[slope_mask] = (xx[slope_mask] - quarter) * np.tan(slope_angle)
     max_slope_h = quarter * np.tan(slope_angle)
 
     heights[rough_mask] = (max_slope_h
-                           + 0.1 * np.sin(5 * xx[rough_mask]) * np.cos(5 * yy[rough_mask]))
+                           + 0.15 * np.sin(2 * xx[rough_mask]) * np.cos(2 * yy[rough_mask])
+                           + 0.1 * np.sin(3 * xx[rough_mask] + yy[rough_mask]))
 
     flat2 = xx >= 3 * quarter
     heights[flat2] = max_slope_h

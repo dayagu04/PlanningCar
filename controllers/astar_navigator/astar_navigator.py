@@ -17,15 +17,14 @@ from src.planning.astar import AStarPlanner
 import numpy as np
 
 TARGETS = [
-TARGETS = [
-    (2.0, 0.0),
-    (2.0, 2.0),
-    (-2.0, 2.0),
-    (-2.0, -2.0),
-    (2.0, -2.0),
+    (8.0, 0.0),
+    (8.0, 8.0),
+    (-8.0, 8.0),
+    (-8.0, -8.0),
+    (8.0, -8.0),
     (0.0, 0.0),
 ]
-DISTANCE_TOLERANCE = 0.5
+DISTANCE_TOLERANCE = 0.8
 REPLAN_INTERVAL = 200
 
 
@@ -36,13 +35,18 @@ def get_bearing(compass_values):
 def compute_steering(current_pos, target, bearing):
     dx = target[0] - current_pos[0]
     dy = target[1] - current_pos[1]
-    target_angle = math.atan2(dx, dy)
-    angle_diff = target_angle - bearing
-    while angle_diff > math.pi:
-        angle_diff -= 2 * math.pi
-    while angle_diff < -math.pi:
-        angle_diff += 2 * math.pi
-    return angle_diff
+    dist = math.sqrt(dx * dx + dy * dy)
+    if dist < 0.01:
+        return 0.0
+    dx /= dist
+    dy /= dist
+    target_angle = math.atan2(dy, dx)
+    beta = (target_angle - bearing) % (2 * math.pi) - math.pi
+    if beta > 0:
+        beta = math.pi - beta
+    else:
+        beta = -beta - math.pi
+    return beta
 
 
 def lidar_to_height_grid(lidar_ranges):
@@ -152,11 +156,11 @@ def main():
             current_waypoint = final_target
 
         bearing = get_bearing(compass_vals)
-        angle_diff = compute_steering(pos, current_waypoint, bearing)
+        beta = compute_steering(pos, current_waypoint, bearing)
 
-        turn = angle_diff * params.turn_gain
-        left_speed = params.max_speed - turn
-        right_speed = params.max_speed + turn
+        base_speed = params.max_speed - math.pi
+        left_speed = base_speed - params.turn_gain * beta
+        right_speed = base_speed + params.turn_gain * beta
         left_speed = max(-params.max_speed, min(params.max_speed, left_speed))
         right_speed = max(-params.max_speed, min(params.max_speed, right_speed))
 

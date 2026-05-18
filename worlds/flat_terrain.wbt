@@ -2,31 +2,221 @@
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
 
 WorldInfo {
-  title "Flat Terrain Navigation Test"
+  title "平坦地形导航测试 - Flat Terrain Navigation"
+  basicTimeStep 32
+  contactProperties [
+    ContactProperties {
+      material1 "ground"
+      coulombFriction [
+        0.8
+      ]
+      softCFM 0.0001
+    }
+  ]
 }
 Viewpoint {
-  orientation -0.3011313679370974 0 0.9535826651341417 0.5
-  position -12.090393150001928 -13.64756271128737 8.280466429713266
+  orientation -0.4 -0.4 0.82 1.9
+  position 15 -15 12
+  follow "adaptive_robot"
+  followType "Pan and Tilt Shot"
+  followSmoothness 0.3
 }
 TexturedBackground {
+  texture "noon_cloudy_countryside"
 }
 TexturedBackgroundLight {
+  texture "noon_cloudy_countryside"
+  castShadows TRUE
 }
-RectangleArena {
-  floorSize 20 20
-  floorTileSize 1 1
+DEF GROUND Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/default/worlds/textures/grass.jpg"
+          ]
+        }
+        roughness 0.9
+        metalness 0
+        textureTransform TextureTransform {
+          scale 50 50
+        }
+      }
+      geometry DEF GROUND_BOX Box {
+        size 100 100 0.1
+      }
+    }
+  ]
+  name "ground"
+  contactMaterial "ground"
+  boundingObject USE GROUND_BOX
+  locked TRUE
+}
+DEF WALL_NORTH Solid {
+  translation 0 50 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        roughness 0.5
+      }
+      geometry Box {
+        size 100 0.2 1
+      }
+    }
+  ]
+  name "wall_north"
+  boundingObject Box {
+    size 100 0.2 1
+  }
+}
+DEF WALL_SOUTH Solid {
+  translation 0 -50 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        roughness 0.5
+      }
+      geometry Box {
+        size 100 0.2 1
+      }
+    }
+  ]
+  name "wall_south"
+  boundingObject Box {
+    size 100 0.2 1
+  }
+}
+DEF WALL_EAST Solid {
+  translation 50 0 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        roughness 0.5
+      }
+      geometry Box {
+        size 0.2 100 1
+      }
+    }
+  ]
+  name "wall_east"
+  boundingObject Box {
+    size 0.2 100 1
+  }
+}
+DEF WALL_WEST Solid {
+  translation -50 0 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        roughness 0.5
+      }
+      geometry Box {
+        size 0.2 100 1
+      }
+    }
+  ]
+  name "wall_west"
+  boundingObject Box {
+    size 0.2 100 1
+  }
+}
+DEF TARGET_MARKER_1 Solid {
+  translation 8 0 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        emissiveColor 0.5 0 0
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 0.3
+      }
+    }
+  ]
+  name "target_1"
+}
+DEF TARGET_MARKER_2 Solid {
+  translation 8 8 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0.5 0
+        emissiveColor 0.5 0.25 0
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 0.3
+      }
+    }
+  ]
+  name "target_2"
+}
+DEF TARGET_MARKER_3 Solid {
+  translation -8 8 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 1 0
+        emissiveColor 0.5 0.5 0
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 0.3
+      }
+    }
+  ]
+  name "target_3"
+}
+DEF TARGET_MARKER_4 Solid {
+  translation -8 -8 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 1 0
+        emissiveColor 0 0.5 0
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 0.3
+      }
+    }
+  ]
+  name "target_4"
+}
+DEF TARGET_MARKER_5 Solid {
+  translation 8 -8 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0.5 1
+        emissiveColor 0 0.25 0.5
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 0.3
+      }
+    }
+  ]
+  name "target_5"
 }
 Robot {
-  translation -9.799877719012496 9.799157026062563 0.08872767834742055
-  rotation 0.014403386723633789 -0.002665106795287566 0.9998927140731946 1.5784622739392087
+  translation 0 0 0.15
+  rotation 0 0 1 0
   children [
     DEF BODY Shape {
       appearance PBRAppearance {
         baseColor 0.2 0.4 0.8
         roughness 0.5
+        metalness 0.3
       }
       geometry Box {
         size 0.4 0.3 0.1
@@ -37,7 +227,7 @@ Robot {
       horizontalResolution 360
       fieldOfView 6.2832
       numberOfLayers 1
-      maxRange 10
+      maxRange 15
     }
     DEF GPS GPS {
       translation 0 0 0.05
@@ -50,22 +240,23 @@ Robot {
     }
     DEF WHEEL_FL HingeJoint {
       jointParameters HingeJointParameters {
-        position 1135.156761238157
         axis 0 1 0
         anchor 0.15 0.18 -0.03
       }
       device [
         RotationalMotor {
           name "wheel_fl"
+          maxVelocity 10
         }
       ]
       endPoint Solid {
         translation 0.15 0.18 -0.03
-        rotation -0.37595132766900496 0.6552318082890273 -0.6552342150942696 3.860799133715566
+        rotation 1 0 0 1.5708
         children [
           Shape {
             appearance PBRAppearance {
               baseColor 0.1 0.1 0.1
+              roughness 0.8
             }
             geometry Cylinder {
               height 0.04
@@ -81,28 +272,27 @@ Robot {
         physics Physics {
           density 500
         }
-        linearVelocity 0.0006660433387833341 0.00048354242274308284 -0.0008966173345493367
-        angularVelocity -4.917458296230849 -0.040800411190563185 0.05505641799053062
       }
     }
     DEF WHEEL_FR HingeJoint {
       jointParameters HingeJointParameters {
-        position 1171.706622097842
         axis 0 1 0
         anchor 0.15 -0.18 -0.03
       }
       device [
         RotationalMotor {
           name "wheel_fr"
+          maxVelocity 10
         }
       ]
       endPoint Solid {
         translation 0.15 -0.18 -0.03
-        rotation 0.03799415688190466 0.7065949250243053 -0.7065975204971566 3.065641151367704
+        rotation 1 0 0 1.5708
         children [
           Shape {
             appearance PBRAppearance {
               baseColor 0.1 0.1 0.1
+              roughness 0.8
             }
             geometry Cylinder {
               height 0.04
@@ -118,28 +308,27 @@ Robot {
         physics Physics {
           density 500
         }
-        linearVelocity 0.0006789399123871808 -0.0005722707445817812 6.73198763471488e-05
-        angularVelocity -5.000807195923345 -0.041436205238117814 0.05606604294872947
       }
     }
     DEF WHEEL_RL HingeJoint {
       jointParameters HingeJointParameters {
-        position 1135.1554553695403
         axis 0 1 0
         anchor -0.15 0.18 -0.03
       }
       device [
         RotationalMotor {
           name "wheel_rl"
+          maxVelocity 10
         }
       ]
       endPoint Solid {
         translation -0.15 0.18 -0.03
-        rotation -0.3754630610424975 0.6553717778514871 -0.6553741851708675 3.8599433956447817
+        rotation 1 0 0 1.5708
         children [
           Shape {
             appearance PBRAppearance {
               baseColor 0.1 0.1 0.1
+              roughness 0.8
             }
             geometry Cylinder {
               height 0.04
@@ -155,28 +344,27 @@ Robot {
         physics Physics {
           density 500
         }
-        linearVelocity -0.00021564265916837791 0.00047979526551194564 -0.0004795501785217131
-        angularVelocity -4.917440339626251 -0.040789887761025476 0.05508166448738419
       }
     }
     DEF WHEEL_RR HingeJoint {
       jointParameters HingeJointParameters {
-        position 1171.7092832224525
         axis 0 1 0
         anchor -0.15 -0.18 -0.03
       }
       device [
         RotationalMotor {
           name "wheel_rr"
+          maxVelocity 10
         }
       ]
       endPoint Solid {
         translation -0.15 -0.18 -0.03
-        rotation 0.03705264430479979 0.7066199237878367 -0.7066225193525139 3.0675215219142724
+        rotation 1 0 0 1.5708
         children [
           Shape {
             appearance PBRAppearance {
               baseColor 0.1 0.1 0.1
+              roughness 0.8
             }
             geometry Cylinder {
               height 0.04
@@ -192,8 +380,6 @@ Robot {
         physics Physics {
           density 500
         }
-        linearVelocity -0.0001900700244898151 -0.0005862406672550392 0.00046719254658899917
-        angularVelocity -5.000837676884989 -0.041447975346473966 0.05605203076117251
       }
     }
   ]
@@ -202,8 +388,7 @@ Robot {
     size 0.4 0.3 0.1
   }
   physics Physics {
+    density 1000
   }
   controller "adaptive_navigator"
-  linearVelocity 0.0001524537923502033 -7.310943154427226e-06 -0.00020860635497372943
-  angularVelocity -0.0013394896649995963 -0.0026926783841615337 -0.0029448376439899717
 }
