@@ -1,0 +1,45 @@
+project_name: "irregular-terrain-adaptive-navigation"
+author: "王志伟"
+student_id: "22205050124"
+
+simulation:
+  platform: "webots"
+  webots_version: ">=2023b"
+  python_version: "3.9"
+  time_step_ms: 32
+
+robot:
+  type: "four_wheel_differential"
+  base_max_speed: 7.0
+  wheel_radius: 0.1
+  wheelbase: 0.4
+
+sensors:
+  lidar:
+    enabled: true
+    max_range: 10.0
+    horizontal_resolution: 360
+    frequency_hz: 10
+  imu:
+    enabled: true
+  gps:
+    enabled: true
+  compass:
+    enabled: true
+  range_finder:
+    enabled: true
+    width: 64
+    height: 64
+
+terrain:
+  types: ["flat", "slope", "rough", "transition"]
+  slope_range_deg: [0, 30]
+  friction_range: [0.3, 0.8]
+
+evaluation:
+  metrics:
+    - "average_speed"
+    - "attitude_stability"
+    - "path_tracking_error"
+    - "task_completion_rate"
+  log_frequency_hz: 20
