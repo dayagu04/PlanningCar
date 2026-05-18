@@ -12,10 +12,10 @@ class MotionParams:
 
 
 PROFILES = {
-    TerrainType.FLAT: MotionParams(max_speed=3.0, turn_gain=2.5, accel_limit=2.0),
-    TerrainType.SLOPE: MotionParams(max_speed=2.0, turn_gain=2.0, accel_limit=0.5),
-    TerrainType.ROUGH: MotionParams(max_speed=1.5, turn_gain=1.5, accel_limit=0.3),
-    TerrainType.TRANSITION: MotionParams(max_speed=2.0, turn_gain=2.0, accel_limit=0.5),
+    TerrainType.FLAT: MotionParams(max_speed=10.0, turn_gain=3.0, accel_limit=3.0),
+    TerrainType.SLOPE: MotionParams(max_speed=7.0, turn_gain=2.5, accel_limit=1.5),
+    TerrainType.ROUGH: MotionParams(max_speed=6.0, turn_gain=2.0, accel_limit=1.0),
+    TerrainType.TRANSITION: MotionParams(max_speed=7.0, turn_gain=2.5, accel_limit=1.2),
 }
 
 

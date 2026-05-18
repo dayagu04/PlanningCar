@@ -246,7 +246,7 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_fl"
-          maxVelocity 10
+          maxVelocity 15
         }
       ]
       endPoint Solid {
@@ -282,7 +282,7 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_fr"
-          maxVelocity 10
+          maxVelocity 15
         }
       ]
       endPoint Solid {
@@ -318,7 +318,7 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_rl"
-          maxVelocity 10
+          maxVelocity 15
         }
       ]
       endPoint Solid {
@@ -354,7 +354,7 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_rr"
-          maxVelocity 10
+          maxVelocity 15
         }
       ]
       endPoint Solid {

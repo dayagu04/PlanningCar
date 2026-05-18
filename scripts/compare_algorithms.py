@@ -11,7 +11,9 @@ sys.path.insert(0, PROJECT_ROOT)
 
 DATA_DIR = os.path.join(PROJECT_ROOT, "data", "experiments")
 FIGURES_DIR = os.path.join(PROJECT_ROOT, "results", "figures")
+THESIS_DIR = os.path.join(FIGURES_DIR, "thesis")
 os.makedirs(FIGURES_DIR, exist_ok=True)
+os.makedirs(THESIS_DIR, exist_ok=True)
 
 plt.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -194,9 +196,16 @@ def main():
     plot_trajectory_comparison(os.path.join(FIGURES_DIR, "trajectory_comparison.png"))
     plot_speed_comparison(os.path.join(FIGURES_DIR, "speed_comparison.png"))
 
+    # Thesis-named copies under results/figures/thesis/
+    plot_trajectory_comparison(os.path.join(THESIS_DIR, "图6-2_四种地形轨迹对比.png"))
+    plot_speed_comparison(os.path.join(THESIS_DIR, "图6-3_四种地形速度曲线对比.png"))
+    plot_metrics_comparison(all_metrics, os.path.join(THESIS_DIR, "图6-4_算法对比指标柱状图.png"))
+
     table = generate_metrics_table(all_metrics)
     table_path = os.path.join(FIGURES_DIR, "metrics_table.csv")
     table.to_csv(table_path, index=False, encoding="utf-8-sig")
+    table.to_csv(os.path.join(THESIS_DIR, "表6-1_算法对比指标.csv"),
+                 index=False, encoding="utf-8-sig")
     print(f"\nMetrics table saved: {table_path}")
     print("\n" + table.to_string(index=False))
 

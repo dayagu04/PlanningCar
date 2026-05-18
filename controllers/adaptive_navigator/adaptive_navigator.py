@@ -7,7 +7,7 @@ Runs continuously until simulation is stopped.
 import sys
 import os
 import math
-import time as pytime
+import json
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
@@ -15,13 +15,18 @@ if PROJECT_ROOT not in sys.path:
 
 from controller import Robot  # type: ignore
 from src.perception.terrain_features import extract_features
-from src.classification.rule_classifier import TerrainClassifier, TerrainType
+from src.classification.rule_classifier import TerrainClassifier
 from src.control.adaptive_params import get_params
+from src.utils.nav_common import (
+    get_bearing,
+    compute_steering,
+    lidar_to_height_grid,
+    open_log_file,
+    differential_wheel_speeds,
+)
 
-import numpy as np
 
-
-TARGETS = [
+DEFAULT_TARGETS = [
     (8.0, 0.0),
     (8.0, 8.0),
     (-8.0, 8.0),
@@ -32,68 +37,22 @@ TARGETS = [
 DISTANCE_TOLERANCE = 0.8
 
 
-def get_bearing(compass_values):
-    """Get robot heading angle in world frame (radians).
-    Compass returns north vector in robot frame.
-    Webots convention: north is +Y axis."""
-    # north vector x and y components in robot frame
-    return math.atan2(compass_values[0], compass_values[1])
+def load_targets():
+    """Load waypoints from runtime config if available, else use defaults."""
+    config_path = os.path.join(PROJECT_ROOT, "data", "runtime_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            wps = cfg.get("waypoints")
+            if wps and len(wps) > 0:
+                return [tuple(wp) for wp in wps]
+        except Exception as e:
+            print(f"[adaptive_navigator] Failed to load runtime config: {e}")
+    return DEFAULT_TARGETS
 
 
-def compute_steering(current_pos, target, bearing):
-    """Compute angle error using Webots official autopilot algorithm.
-    Returns beta: positive = need to turn left, negative = need to turn right."""
-    dx = target[0] - current_pos[0]
-    dy = target[1] - current_pos[1]
-    dist = math.sqrt(dx * dx + dy * dy)
-    if dist < 0.01:
-        return 0.0
-
-    # Normalize direction
-    dx /= dist
-    dy /= dist
-
-    # Webots official: robot_angle = atan2(north[0], north[1])
-    #                  target_angle = atan2(direction.v, direction.u)
-    # where direction.u = dx, direction.v = dy
-    target_angle = math.atan2(dy, dx)
-
-    # beta = mod(target - robot, 2*pi) - pi
-    beta = (target_angle - bearing) % (2 * math.pi) - math.pi
-
-    # Move singularity (from Webots example)
-    if beta > 0:
-        beta = math.pi - beta
-    else:
-        beta = -beta - math.pi
-
-    return beta
-
-
-def lidar_to_height_grid(lidar_ranges, num_layers=1):
-    """Convert lidar range data to a simulated height grid for feature extraction.
-    For single-layer 2D lidar, we estimate terrain roughness from range variance."""
-    ranges = np.array(lidar_ranges, dtype=np.float64)
-    ranges = ranges[np.isfinite(ranges)]
-    if len(ranges) < 10:
-        return np.zeros((4, 4))
-
-    sector_size = len(ranges) // 16
-    if sector_size == 0:
-        return np.zeros((4, 4))
-
-    heights = []
-    for i in range(16):
-        sector = ranges[i * sector_size:(i + 1) * sector_size]
-        if len(sector) > 0:
-            min_range = np.min(sector)
-            heights.append(min_range)
-        else:
-            heights.append(0.0)
-
-    grid = np.array(heights).reshape(4, 4)
-    grid = grid - np.mean(grid)
-    return grid
+TARGETS = load_targets()
 
 
 def main():
@@ -125,9 +84,7 @@ def main():
     target_idx = 0
     step_count = 0
 
-    log_path = os.path.join(PROJECT_ROOT, "data", "logs", "navigation.csv")
-    log_file = open(log_path, "w", encoding="utf-8")
-    log_file.write("step,time_s,x,y,z,roll,pitch,yaw,terrain,speed,target_idx,dist_to_target\n")
+    log_file = open_log_file(PROJECT_ROOT)
 
     print("[adaptive_navigator] Started. Navigating through waypoints...")
 
@@ -163,13 +120,7 @@ def main():
         bearing = get_bearing(compass_vals)
         beta = compute_steering(pos, target, bearing)
 
-        # Webots official autopilot formula
-        base_speed = params.max_speed - math.pi
-        left_speed = base_speed - params.turn_gain * beta
-        right_speed = base_speed + params.turn_gain * beta
-
-        left_speed = max(-params.max_speed, min(params.max_speed, left_speed))
-        right_speed = max(-params.max_speed, min(params.max_speed, right_speed))
+        left_speed, right_speed = differential_wheel_speeds(beta, params)
 
         motors[0].setVelocity(left_speed)
         motors[2].setVelocity(left_speed)
@@ -185,7 +136,9 @@ def main():
         if step_count % 100 == 1:
             print(f"[step {step_count}] pos=({pos[0]:.2f},{pos[1]:.2f}) "
                   f"terrain={terrain.value} speed={params.max_speed:.1f} "
-                  f"target[{target_idx}]={target} dist={dist:.2f}")
+                  f"target[{target_idx}]={target} dist={dist:.2f} "
+                  f"compass=({compass_vals[0]:.3f},{compass_vals[1]:.3f}) "
+                  f"bearing={math.degrees(bearing):.1f} beta={math.degrees(beta):.1f}")
 
     log_file.close()
     print("[adaptive_navigator] Simulation ended.")

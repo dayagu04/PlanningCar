@@ -122,7 +122,7 @@ Robot {
     DEF IMU InertialUnit { translation 0 0 0.05 }
     DEF WHEEL_FL HingeJoint {
       jointParameters HingeJointParameters { axis 0 1 0 anchor 0.15 0.18 -0.03 }
-      device [ RotationalMotor { name "wheel_fl" maxVelocity 10 } ]
+      device [ RotationalMotor { name "wheel_fl" maxVelocity 15 } ]
       endPoint Solid {
         translation 0.15 0.18 -0.03
         rotation 1 0 0 1.5708
@@ -134,7 +134,7 @@ Robot {
     }
     DEF WHEEL_FR HingeJoint {
       jointParameters HingeJointParameters { axis 0 1 0 anchor 0.15 -0.18 -0.03 }
-      device [ RotationalMotor { name "wheel_fr" maxVelocity 10 } ]
+      device [ RotationalMotor { name "wheel_fr" maxVelocity 15 } ]
       endPoint Solid {
         translation 0.15 -0.18 -0.03
         rotation 1 0 0 1.5708
@@ -146,7 +146,7 @@ Robot {
     }
     DEF WHEEL_RL HingeJoint {
       jointParameters HingeJointParameters { axis 0 1 0 anchor -0.15 0.18 -0.03 }
-      device [ RotationalMotor { name "wheel_rl" maxVelocity 10 } ]
+      device [ RotationalMotor { name "wheel_rl" maxVelocity 15 } ]
       endPoint Solid {
         translation -0.15 0.18 -0.03
         rotation 1 0 0 1.5708
@@ -158,7 +158,7 @@ Robot {
     }
     DEF WHEEL_RR HingeJoint {
       jointParameters HingeJointParameters { axis 0 1 0 anchor -0.15 -0.18 -0.03 }
-      device [ RotationalMotor { name "wheel_rr" maxVelocity 10 } ]
+      device [ RotationalMotor { name "wheel_rr" maxVelocity 15 } ]
       endPoint Solid {
         translation -0.15 -0.18 -0.03
         rotation 1 0 0 1.5708

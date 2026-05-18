@@ -3,10 +3,20 @@
 import os
 import sys
 import subprocess
+import json
+import random
+import math
+import re
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
 WORLDS_DIR = os.path.join(PROJECT_ROOT, "worlds")
 WEBOTS_EXE = r"C:\Program Files\Webots\msys64\mingw64\bin\webots.exe"
+RUNTIME_CONFIG = os.path.join(PROJECT_ROOT, "data", "runtime_config.json")
+
+from src.planning.waypoints import generate_random_waypoints, generate_random_robot_start
+from src.planning.tsp_solver import optimize_waypoint_order
 
 WORLDS = {
     "1": ("flat_terrain.wbt", "平坦地形 (Flat Terrain)"),
@@ -58,19 +68,71 @@ def select_controller():
         print("无效选项，请重新输入！")
 
 
-def patch_world_controller(world_file: str, controller: str) -> str:
-    """Create a temporary world file with the selected controller."""
-    import re
-
+def patch_world_controller(world_file: str, controller: str,
+                           robot_start: tuple, waypoints: list) -> str:
+    """Create a temp world file with random robot start and visual waypoint markers."""
     world_path = os.path.join(WORLDS_DIR, world_file)
     with open(world_path, "r", encoding="utf-8") as f:
         content = f.read()
 
+    # Replace controller name
     content = re.sub(
         r'controller ".*?"',
         f'controller "{controller}"',
         content
     )
+
+    # Replace robot starting position
+    z_height = 0.8 if "slope" in world_file or "transition" in world_file else 0.15
+    pattern = r'(Robot \{[\s\n]*translation )[\-\d\.]+\s+[\-\d\.]+\s+[\-\d\.]+'
+    replacement = f'\\g<1>{robot_start[0]:.3f} {robot_start[1]:.3f} {z_height}'
+    content = re.sub(pattern, replacement, content, count=1)
+
+    # Remove all existing TARGET_MARKER blocks
+    content = re.sub(
+        r'DEF TARGET_MARKER_\d+ Solid \{.*?name "target_\d+"\s*\}\s*',
+        '',
+        content,
+        flags=re.DOTALL
+    )
+
+    # Build new target markers with bright distinct colors
+    colors = [
+        ("1 0 0", "0.6 0 0"),
+        ("1 0.5 0", "0.6 0.3 0"),
+        ("1 1 0", "0.6 0.6 0"),
+        ("0 1 0", "0 0.6 0"),
+        ("0 0.8 1", "0 0.4 0.6"),
+        ("0.7 0 1", "0.4 0 0.6"),
+        ("1 0 0.5", "0.6 0 0.3"),
+        ("0 1 0.5", "0 0.6 0.3"),
+    ]
+    markers_str = ""
+    for i, (wx, wy) in enumerate(waypoints):
+        base_color, emis_color = colors[i % len(colors)]
+        markers_str += f'''DEF TARGET_MARKER_{i+1} Solid {{
+  translation {wx:.3f} {wy:.3f} 0.1
+  children [
+    Shape {{
+      appearance PBRAppearance {{
+        baseColor {base_color}
+        emissiveColor {emis_color}
+        roughness 0.3
+      }}
+      geometry Cylinder {{
+        height 0.2
+        radius 0.4
+      }}
+    }}
+  ]
+  name "target_{i+1}"
+}}
+'''
+
+    # Insert markers before the Robot block
+    robot_block_idx = content.find("Robot {")
+    if robot_block_idx != -1:
+        content = content[:robot_block_idx] + markers_str + content[robot_block_idx:]
 
     temp_path = world_path.replace(".wbt", "_temp.wbt")
     with open(temp_path, "w", encoding="utf-8") as f:
@@ -136,15 +198,53 @@ def main():
 
     print()
     print(f"已选择: {world_file} + {controller}")
-    print()
 
-    # Patch world file with selected controller
-    temp_world = patch_world_controller(world_file, controller)
+    # Generate random robot start and waypoints
+    seed = random.randint(0, 10000)
+    print(f"\n随机种子: {seed} (用于复现实验)")
+
+    robot_start = generate_random_robot_start(max_radius=3.0, seed=seed)
+    random_waypoints = generate_random_waypoints(
+        num_points=5,
+        min_radius=6.0,
+        max_radius=12.0,
+        min_separation=5.0,
+        seed=seed,
+    )
+
+    print(f"\n机器人起始位置: ({robot_start[0]:.2f}, {robot_start[1]:.2f})")
+    print(f"随机生成 {len(random_waypoints)} 个目标点:")
+    for i, (wx, wy) in enumerate(random_waypoints):
+        print(f"  随机目标 {i+1}: ({wx:.2f}, {wy:.2f})")
+
+    # Optimize visit order using TSP solver (nearest-neighbor + 2-opt)
+    print("\n执行 TSP 路径优化...")
+    waypoints, tsp_info = optimize_waypoint_order(robot_start, random_waypoints)
+    print(f"  原始顺序总路径长度: {tsp_info['original_length']:.2f} m")
+    print(f"  贪心最近邻优化后:   {tsp_info['greedy_length']:.2f} m")
+    print(f"  2-opt 优化后:       {tsp_info['optimized_length']:.2f} m")
+    print(f"  路径缩短:           {tsp_info['improvement_pct']:.1f}%")
+    print(f"\n优化后访问顺序:")
+    for i, (wx, wy) in enumerate(waypoints):
+        print(f"  第 {i+1} 个: ({wx:.2f}, {wy:.2f})")
+
+    # Save runtime config for controller to read
+    os.makedirs(os.path.dirname(RUNTIME_CONFIG), exist_ok=True)
+    with open(RUNTIME_CONFIG, "w", encoding="utf-8") as f:
+        json.dump({
+            "robot_start": list(robot_start),
+            "waypoints": [list(wp) for wp in waypoints],
+            "seed": seed,
+            "tsp_info": tsp_info,
+        }, f, indent=2)
+    print(f"\n运行时配置已保存: {RUNTIME_CONFIG}")
+
+    # Patch world file
+    temp_world = patch_world_controller(world_file, controller, robot_start, waypoints)
 
     try:
         launch_webots(temp_world)
     finally:
-        # Cleanup
         if os.path.exists(temp_world):
             os.remove(temp_world)
         cleanup_temp_files()

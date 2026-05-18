@@ -3,6 +3,7 @@
 import sys
 import os
 import math
+import json
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
@@ -10,13 +11,18 @@ if PROJECT_ROOT not in sys.path:
 
 from controller import Robot  # type: ignore
 from src.perception.terrain_features import extract_features
-from src.classification.rule_classifier import TerrainClassifier, TerrainType
+from src.classification.rule_classifier import TerrainClassifier
 from src.control.adaptive_params import get_params
 from src.planning.astar import AStarPlanner
+from src.utils.nav_common import (
+    get_bearing,
+    compute_steering,
+    lidar_to_height_grid,
+    open_log_file,
+    differential_wheel_speeds,
+)
 
-import numpy as np
-
-TARGETS = [
+DEFAULT_TARGETS = [
     (8.0, 0.0),
     (8.0, 8.0),
     (-8.0, 8.0),
@@ -24,51 +30,25 @@ TARGETS = [
     (8.0, -8.0),
     (0.0, 0.0),
 ]
+
+
+def load_targets():
+    config_path = os.path.join(PROJECT_ROOT, "data", "runtime_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            wps = cfg.get("waypoints")
+            if wps and len(wps) > 0:
+                return [tuple(wp) for wp in wps]
+        except Exception as e:
+            print(f"[astar_navigator] Failed to load runtime config: {e}")
+    return DEFAULT_TARGETS
+
+
+TARGETS = load_targets()
 DISTANCE_TOLERANCE = 0.8
 REPLAN_INTERVAL = 200
-
-
-def get_bearing(compass_values):
-    return math.atan2(compass_values[0], compass_values[1])
-
-
-def compute_steering(current_pos, target, bearing):
-    dx = target[0] - current_pos[0]
-    dy = target[1] - current_pos[1]
-    dist = math.sqrt(dx * dx + dy * dy)
-    if dist < 0.01:
-        return 0.0
-    dx /= dist
-    dy /= dist
-    target_angle = math.atan2(dy, dx)
-    beta = (target_angle - bearing) % (2 * math.pi) - math.pi
-    if beta > 0:
-        beta = math.pi - beta
-    else:
-        beta = -beta - math.pi
-    return beta
-
-
-def lidar_to_height_grid(lidar_ranges):
-    ranges = np.array(lidar_ranges, dtype=np.float64)
-    ranges = ranges[np.isfinite(ranges)]
-    if len(ranges) < 10:
-        return np.zeros((4, 4))
-    sector_size = len(ranges) // 16
-    if sector_size == 0:
-        return np.zeros((4, 4))
-    heights = []
-    for i in range(16):
-        sector = ranges[i * sector_size:(i + 1) * sector_size]
-        if len(sector) > 0:
-            heights.append(np.min(sector))
-        else:
-            heights.append(0.0)
-    for i in range(16):
-        sector = ranges[i * sector_size:(i + 1) * sector_size]
-        heights.append(np.min(sector))
-    grid = np.array(heights).reshape(4, 4)
-    return grid - np.mean(grid)
 
 
 def main():
@@ -104,9 +84,7 @@ def main():
     path = None
     path_idx = 0
 
-    log_path = os.path.join(PROJECT_ROOT, "data", "logs", "navigation.csv")
-    log_file = open(log_path, "w", encoding="utf-8")
-    log_file.write("step,time_s,x,y,z,roll,pitch,yaw,terrain,speed,target_idx,dist_to_target\n")
+    log_file = open_log_file(PROJECT_ROOT)
 
     print("[astar_navigator] Started. Planning paths with A*...")
 
@@ -158,11 +136,7 @@ def main():
         bearing = get_bearing(compass_vals)
         beta = compute_steering(pos, current_waypoint, bearing)
 
-        base_speed = params.max_speed - math.pi
-        left_speed = base_speed - params.turn_gain * beta
-        right_speed = base_speed + params.turn_gain * beta
-        left_speed = max(-params.max_speed, min(params.max_speed, left_speed))
-        right_speed = max(-params.max_speed, min(params.max_speed, right_speed))
+        left_speed, right_speed = differential_wheel_speeds(beta, params)
 
         motors[0].setVelocity(left_speed)
         motors[2].setVelocity(left_speed)
