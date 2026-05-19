@@ -47,21 +47,32 @@
 
 ## 快速开始
 
-### 1. 激活虚拟环境
+> 仓库未包含 `.venv/`（体积大、平台相关），首次拉取后需在本地创建。
+
+### 1. 创建虚拟环境并安装依赖
+```powershell
+# 在仓库根目录执行（要求 Python 3.9）
+py -3.9 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 2. 激活虚拟环境（后续使用）
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 2. 运行单元测试
+### 3. 运行单元测试
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-### 3. 安装 Webots
+### 4. 安装 Webots
 - 官网下载: https://cyberbotics.com/
 - 安装后将 `<Webots>\lib\controller\python` 添加到 `PYTHONPATH`
 
-### 4. 启动仿真
+### 5. 启动仿真
 ```powershell
 webots worlds\flat_terrain.wbt
 ```
