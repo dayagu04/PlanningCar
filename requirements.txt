@@ -7,4 +7,5 @@ opencv-python>=4.8
 pyyaml>=6.0
 tqdm>=4.65
 seaborn>=0.12
+pybind11>=2.11
 pytest>=7.4

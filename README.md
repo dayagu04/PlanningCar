@@ -21,21 +21,26 @@
 .
 ├── worlds/                   # Webots 世界文件 (.wbt)
 ├── controllers/              # Webots 控制器
-│   ├── adaptive_navigator/   # 主导航控制器
-│   └── terrain_classifier/   # 地形分类测试控制器
+│   ├── adaptive_navigator/   # 自适应导航控制器
+│   └── astar_navigator/      # A* 路径规划控制器
 ├── protos/                   # 自定义 PROTO 节点
 ├── src/                      # 核心 Python 算法库
 │   ├── perception/           # 地形特征提取
 │   ├── classification/       # 地形分类
-│   ├── planning/             # 路径规划
+│   ├── planning/             # 路径规划 (A* / TSP)
 │   ├── control/              # 自适应控制
 │   └── utils/                # 工具函数
-├── scripts/                  # 实验执行/数据处理脚本
+├── cpp/                      # C++ 高性能模块 (pybind11)
+│   ├── include/              # 头文件
+│   └── src/                  # 实现 + Python 绑定
+├── scripts/
+│   ├── figures/              # 论文图表 & 地形/世界生成
+│   ├── experiments/          # 实验运行 & 数据分析
+│   └── tools/                # 构建、启动、参数调优
 ├── tests/                    # 单元测试
 ├── data/                     # 实验数据 (logs / experiments)
 ├── results/                  # 图表与报告
-├── docs/                     # 文档
-├── legacy/                   # 历史参考代码
+├── docs/                     # 文档 (论文大纲、任务书、开题报告)
 ├── config.yaml               # 全局配置
 └── requirements.txt          # Python 依赖
 ```

@@ -3,7 +3,7 @@
 import numpy as np
 import os
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "worlds")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "worlds")
 
 TERRAIN_SIZE = 40
 RESOLUTION = 80

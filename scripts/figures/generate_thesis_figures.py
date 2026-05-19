@@ -1,4 +1,4 @@
-﻿"""Generate publication-quality figures for thesis.
+"""Generate publication-quality figures for thesis.
 
 Creates properly formatted figures with Chinese labels and captions.
 """
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 FIGURES_DIR = os.path.join(PROJECT_ROOT, "results", "figures", "thesis")

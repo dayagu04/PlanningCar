@@ -4,7 +4,7 @@ import os
 import math
 import random
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 WORLDS_DIR = os.path.join(PROJECT_ROOT, "worlds")
 
 TERRAIN_SIZE = 40

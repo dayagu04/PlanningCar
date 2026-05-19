@@ -9,7 +9,7 @@ import time
 import pandas as pd
 import numpy as np
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LOG_FILE = os.path.join(PROJECT_ROOT, "data", "logs", "navigation.csv")
 
 

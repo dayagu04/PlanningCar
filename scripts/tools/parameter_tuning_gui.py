@@ -10,7 +10,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import yaml
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.utils.config import Config, get_config

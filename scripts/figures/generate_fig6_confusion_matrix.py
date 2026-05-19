@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 FIGURES_DIR = os.path.join(PROJECT_ROOT, "results", "figures", "thesis")
 os.makedirs(FIGURES_DIR, exist_ok=True)
 

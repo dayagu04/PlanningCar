@@ -12,7 +12,7 @@ import sys
 import sysconfig
 import tempfile
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CPP_DIR = os.path.join(ROOT, "cpp")
 INC_DIR = os.path.join(CPP_DIR, "include")
 SRC_DIR = os.path.join(CPP_DIR, "src")

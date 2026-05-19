@@ -6,7 +6,7 @@ import subprocess
 import time
 import shutil
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 WORLDS_DIR = os.path.join(PROJECT_ROOT, "worlds")
 LOGS_DIR = os.path.join(PROJECT_ROOT, "data", "experiments")
 WEBOTS_EXE = r"C:\Program Files\Webots\msys64\mingw64\bin\webots.exe"
