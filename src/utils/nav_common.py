@@ -66,24 +66,39 @@ def open_log_file(project_root: str, filename: str = "navigation.csv"):
     return log_file
 
 
-def differential_wheel_speeds(beta: float, params) -> Tuple[float, float]:
+def differential_wheel_speeds(beta: float, params,
+                              prev_beta: float = 0.0,
+                              dt: float = 0.032) -> Tuple[float, float]:
     """Map heading error and motion params to (left, right) wheel speeds.
 
-    When the target is mostly behind the robot (|beta| > 90°), the controller
-    spins in place to reorient; otherwise it uses proportional turn gain with
-    saturation so that a single wheel cannot exceed ±max_speed.
+    PD controller on heading + speed shaping:
+    - if the target lies behind the robot, spin in place
+    - otherwise drive forward, scaling speed down with |beta| so the robot
+      slows in tight turns and goes full-throttle when aligned
+    The optional ``prev_beta``/``dt`` enable a derivative term that damps
+    oscillation at high speed; callers that don't track previous beta can
+    leave them at defaults for pure-P behavior.
     """
     if abs(beta) > math.pi / 2:
         spin_speed = params.max_speed * 0.7
-        if beta > 0:
-            return -spin_speed, spin_speed
-        return spin_speed, -spin_speed
+        return (-spin_speed, spin_speed) if beta > 0 else (spin_speed, -spin_speed)
 
-    turn = params.turn_gain * beta
+    # PD on bearing error
+    kp = params.turn_gain
+    kd = 0.6 * kp
+    d_beta = (beta - prev_beta) / max(dt, 1e-3)
+    turn = kp * beta + kd * d_beta
+
+    # Forward speed shaping: 100% when |beta|≈0, 30% when |beta|≈π/2
+    align = max(0.0, math.cos(beta))
+    forward = params.max_speed * (0.3 + 0.7 * align)
+
+    # Saturate turn so neither wheel exceeds max_speed
     max_turn = params.max_speed * 0.7
     turn = max(-max_turn, min(max_turn, turn))
-    left = params.max_speed - turn
-    right = params.max_speed + turn
+
+    left = forward - turn
+    right = forward + turn
     left = max(-params.max_speed, min(params.max_speed, left))
     right = max(-params.max_speed, min(params.max_speed, right))
     return left, right

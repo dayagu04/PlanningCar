@@ -17,6 +17,7 @@ RUNTIME_CONFIG = os.path.join(PROJECT_ROOT, "data", "runtime_config.json")
 
 from src.planning.waypoints import generate_random_waypoints, generate_random_robot_start
 from src.planning.tsp_solver import optimize_waypoint_order
+from src.utils.terrain_sampling import sample_terrain_height
 
 WORLDS = {
     "1": ("flat_terrain.wbt", "平坦地形 (Flat Terrain)"),
@@ -82,10 +83,11 @@ def patch_world_controller(world_file: str, controller: str,
         content
     )
 
-    # Replace robot starting position
-    z_height = 0.8 if "slope" in world_file or "transition" in world_file else 0.15
+    # Anchor robot start z to terrain height + clearance so it doesn't spawn buried/floating
+    robot_terrain_z = sample_terrain_height(world_file, WORLDS_DIR, robot_start[0], robot_start[1])
+    z_height = robot_terrain_z + 0.25
     pattern = r'(Robot \{[\s\n]*translation )[\-\d\.]+\s+[\-\d\.]+\s+[\-\d\.]+'
-    replacement = f'\\g<1>{robot_start[0]:.3f} {robot_start[1]:.3f} {z_height}'
+    replacement = f'\\g<1>{robot_start[0]:.3f} {robot_start[1]:.3f} {z_height:.3f}'
     content = re.sub(pattern, replacement, content, count=1)
 
     # Remove all existing TARGET_MARKER blocks
@@ -96,33 +98,62 @@ def patch_world_controller(world_file: str, controller: str,
         flags=re.DOTALL
     )
 
-    # Build new target markers with bright distinct colors
+    # Build flag-pole markers anchored at the local terrain height — visible above any slope
+    # Each marker: a slim pole (1.5 m) with a glowing sphere head colored per waypoint index.
     colors = [
-        ("1 0 0", "0.6 0 0"),
-        ("1 0.5 0", "0.6 0.3 0"),
-        ("1 1 0", "0.6 0.6 0"),
-        ("0 1 0", "0 0.6 0"),
-        ("0 0.8 1", "0 0.4 0.6"),
-        ("0.7 0 1", "0.4 0 0.6"),
-        ("1 0 0.5", "0.6 0 0.3"),
-        ("0 1 0.5", "0 0.6 0.3"),
+        ("1 0 0", "0.8 0 0"),
+        ("1 0.55 0", "0.8 0.35 0"),
+        ("1 1 0", "0.8 0.8 0"),
+        ("0.1 1 0.1", "0 0.7 0"),
+        ("0 0.7 1", "0 0.5 0.8"),
+        ("0.7 0.2 1", "0.4 0 0.7"),
+        ("1 0.2 0.6", "0.7 0 0.3"),
+        ("0.2 1 0.7", "0 0.7 0.4"),
     ]
+    pole_height = 1.5
+    pole_radius = 0.04
+    sphere_radius = 0.25
     markers_str = ""
     for i, (wx, wy) in enumerate(waypoints):
         base_color, emis_color = colors[i % len(colors)]
+        terrain_z = sample_terrain_height(world_file, WORLDS_DIR, wx, wy)
+        pole_z = terrain_z + pole_height / 2.0
+        sphere_z = terrain_z + pole_height + sphere_radius * 0.5
         markers_str += f'''DEF TARGET_MARKER_{i+1} Solid {{
-  translation {wx:.3f} {wy:.3f} 0.1
+  translation {wx:.3f} {wy:.3f} 0
   children [
-    Shape {{
-      appearance PBRAppearance {{
-        baseColor {base_color}
-        emissiveColor {emis_color}
-        roughness 0.3
-      }}
-      geometry Cylinder {{
-        height 0.2
-        radius 0.4
-      }}
+    Pose {{
+      translation 0 0 {pole_z:.3f}
+      children [
+        Shape {{
+          appearance PBRAppearance {{
+            baseColor 0.95 0.95 0.95
+            roughness 0.4
+            metalness 0.1
+          }}
+          geometry Cylinder {{
+            height {pole_height:.3f}
+            radius {pole_radius:.3f}
+          }}
+        }}
+      ]
+    }}
+    Pose {{
+      translation 0 0 {sphere_z:.3f}
+      children [
+        Shape {{
+          appearance PBRAppearance {{
+            baseColor {base_color}
+            emissiveColor {emis_color}
+            roughness 0.25
+            metalness 0
+          }}
+          geometry Sphere {{
+            radius {sphere_radius:.3f}
+            subdivision 2
+          }}
+        }}
+      ]
     }}
   ]
   name "target_{i+1}"
@@ -199,6 +230,13 @@ def main():
     print()
     print(f"已选择: {world_file} + {controller}")
 
+    # Load obstacle list for this world (trees + rocks) so we can avoid them
+    obs_path = os.path.join(WORLDS_DIR, world_file.replace(".wbt", "_obstacles.json"))
+    obstacles = []
+    if os.path.exists(obs_path):
+        with open(obs_path, "r", encoding="utf-8") as f:
+            obstacles = json.load(f)
+
     # Generate random robot start and waypoints
     seed = random.randint(0, 10000)
     print(f"\n随机种子: {seed} (用于复现实验)")
@@ -211,6 +249,30 @@ def main():
         min_separation=5.0,
         seed=seed,
     )
+
+    # Reject waypoints that land inside an obstacle (tree/rock + clearance)
+    def too_close_to_obstacle(x, y, clearance=1.0):
+        for obs in obstacles:
+            if math.hypot(x - obs["x"], y - obs["y"]) < obs["r"] + clearance:
+                return True
+        return False
+
+    cleaned_waypoints = []
+    rng = random.Random(seed + 1)
+    for wx, wy in random_waypoints:
+        if not too_close_to_obstacle(wx, wy):
+            cleaned_waypoints.append((wx, wy))
+            continue
+        # Try to nudge the waypoint outward until it clears
+        for _ in range(30):
+            nx = wx + rng.uniform(-2.0, 2.0)
+            ny = wy + rng.uniform(-2.0, 2.0)
+            if 6.0 <= math.hypot(nx, ny) <= 13.0 and not too_close_to_obstacle(nx, ny):
+                cleaned_waypoints.append((nx, ny))
+                break
+        else:
+            cleaned_waypoints.append((wx, wy))  # give up; keep original
+    random_waypoints = cleaned_waypoints
 
     print(f"\n机器人起始位置: ({robot_start[0]:.2f}, {robot_start[1]:.2f})")
     print(f"随机生成 {len(random_waypoints)} 个目标点:")
@@ -234,6 +296,8 @@ def main():
         json.dump({
             "robot_start": list(robot_start),
             "waypoints": [list(wp) for wp in waypoints],
+            "obstacles": obstacles,
+            "world_file": world_file,
             "seed": seed,
             "tsp_info": tsp_info,
         }, f, indent=2)

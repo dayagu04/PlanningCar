@@ -83,6 +83,8 @@ def main():
     classifier = TerrainClassifier()
     target_idx = 0
     step_count = 0
+    prev_beta = 0.0
+    dt = timestep / 1000.0
 
     log_file = open_log_file(PROJECT_ROOT)
 
@@ -120,7 +122,9 @@ def main():
         bearing = get_bearing(compass_vals)
         beta = compute_steering(pos, target, bearing)
 
-        left_speed, right_speed = differential_wheel_speeds(beta, params)
+        left_speed, right_speed = differential_wheel_speeds(beta, params,
+                                                            prev_beta=prev_beta, dt=dt)
+        prev_beta = beta
 
         motors[0].setVelocity(left_speed)
         motors[2].setVelocity(left_speed)
