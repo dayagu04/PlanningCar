@@ -60,6 +60,7 @@ class PurePursuit:
         self.goal_tolerance = goal_tolerance
         self._path: List[Point] = []
         self._last_segment: int = 0  # progress monotonicity
+        self.last_cross_track: float = 0.0  # exposed for controller replan logic
 
     # ------------------------------------------------------------------
     # Path management
@@ -167,22 +168,44 @@ class PurePursuit:
     # ------------------------------------------------------------------
     # Main query
     # ------------------------------------------------------------------
+    def _path_curvature_ahead(self, idx: int, t: float, samples: int = 6) -> float:
+        """Worst-case angular change among the next `samples` path segments.
+
+        Used by ``lookahead_distance`` to shrink the lookahead on twisty
+        sections so the tracker doesn't cut corners.
+        """
+        if len(self._path) < 3:
+            return 0.0
+        worst = 0.0
+        end = min(idx + samples, len(self._path) - 2)
+        for i in range(idx, end):
+            a = self._path[i]
+            b = self._path[i + 1]
+            c = self._path[i + 2]
+            v1 = (b[0] - a[0], b[1] - a[1])
+            v2 = (c[0] - b[0], c[1] - b[1])
+            n1 = math.hypot(*v1) + 1e-9
+            n2 = math.hypot(*v2) + 1e-9
+            dot = max(-1.0, min(1.0, (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2)))
+            angle = math.acos(dot)
+            worst = max(worst, angle)
+        return worst
+
     def lookahead_distance(self, speed_mps: float,
                            override_max: Optional[float] = None,
-                           dist_to_goal: Optional[float] = None) -> float:
-        """L(v) = base + gain·v, clipped, with end-of-path tapering.
-
-        ``dist_to_goal`` is the straight-line distance from robot to the
-        path's last waypoint. When the robot is close to the end, we cap
-        lookahead at ``dist_to_goal`` so the controller doesn't aim past
-        the goal — eliminating the classic "circle around the goal" loop.
-        """
+                           dist_to_goal: Optional[float] = None,
+                           path_curvature: Optional[float] = None) -> float:
+        """L(v) = base + gain·v, clipped, with goal taper and curvature taper."""
         L = self.lookahead_base + self.lookahead_gain * max(0.0, speed_mps)
         upper = override_max if override_max is not None else self.lookahead_max
         L = max(self.lookahead_min, min(upper, L))
         if dist_to_goal is not None:
-            # never look past the goal; never below floor (so we still steer)
             L = max(self.lookahead_min, min(L, dist_to_goal))
+        if path_curvature is not None and path_curvature > 0.5:
+            # >29°: only shrink lookahead on truly sharp bends; keep ≥0.65×
+            # so lookahead can still preview the curve.
+            curve_factor = max(0.65, 1.0 - 0.25 * (path_curvature - 0.5))
+            L = max(self.lookahead_min, L * curve_factor)
         return L
 
     def query(self, pos: Point, heading: float,
@@ -200,9 +223,11 @@ class PurePursuit:
 
         goal = self._path[-1]
         d_goal = math.hypot(pos[0] - goal[0], pos[1] - goal[1])
+        path_curve = self._path_curvature_ahead(idx, t)
         L = self.lookahead_distance(speed_mps,
                                     override_max=max_lookahead,
-                                    dist_to_goal=d_goal)
+                                    dist_to_goal=d_goal,
+                                    path_curvature=path_curve)
         target, end_idx = self._walk_lookahead(idx, t, L)
 
         # Endgame guard: when the robot is on the last segment AND already
@@ -234,6 +259,7 @@ class PurePursuit:
         bx, by = self._path[idx + 1]
         progress += t * math.hypot(bx - ax, by - ay)
 
+        self.last_cross_track = abs(cross)
         return LookaheadResult(
             target=target,
             curvature=curvature,

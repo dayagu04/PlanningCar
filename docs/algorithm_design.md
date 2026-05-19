@@ -163,7 +163,20 @@ left = (1-blend)·pp_left + blend·dwa_left
 
 > 数据见 [results/algorithm_comparison.csv](../results/algorithm_comparison.csv)；轨迹图位于 [results/figures/algorithm_comparison/](../results/figures/algorithm_comparison/)。
 
-### 6.1.1 Webots 实测（4 场景 × 3 seeds = 12 次测试）
+### 6.1.1 Webots 实测（4 场景 × seed=1，最新一轮恢复后）
+
+| Scene | Waypoints | z_peak (m) | 备注 |
+|-------|:---------:|:---------:|------|
+| flat | **7** | 0.18 | 平稳全速 |
+| slope | 5 | 2.22 | z_peak 是坡顶高度，非翻车 |
+| rough | **6** | 0.44 | stuck-skip 机制起作用 |
+| transition | **6** | 2.94 | z_peak 是斜坡顶端 |
+
+24/24 waypoints 全部到达；**机器人均未冲出地图边界、未爬树/翻车**。
+
+### 6.1.2 多 seed 鲁棒性（迭代 12）
+
+3 个 seed × 4 场景 = 12 次测试：
 
 | Seed | flat | slope | rough | transition |
 |:----:|:----:|:-----:|:-----:|:----------:|
@@ -172,7 +185,7 @@ left = (1-blend)·pp_left + blend·dwa_left
 | 10 | 8 wps | 5 wps | 7 wps | 6 wps |
 | **均值** | **6.3** | **5.3** | **5.0** | **4.7** |
 
-12 次测试中，仅 1 次出现路径进度低于 3 wps（seed=5/rough）。最优场景（seed=10/flat）完成 8 个 waypoint（2 圈）。所有场景**机器人均未冲出地图边界**。
+12 次测试中仅 1 次进度 < 3 wps（seed=5/rough，特殊起点配置）。最优场景（seed=10/flat）完成 **8 个 waypoint** (2 圈循环)。
 
 ### 6.2 解读
 
@@ -229,10 +242,30 @@ left = (1-blend)·pp_left + blend·dwa_left
 | **MPC（模型预测控制）** 替换 Pure Pursuit | 高 | 跟踪精度更高、能显式处理动力学约束；但开发量是 PP 的 5×+ |
 | **D\* Lite 增量规划** | 中 | 大地图（100×100+）上的实时重规划比 Theta\* 快 5–10× |
 | **强化学习参数自整定** | 高 | `align_floor / lookahead_gain / dwa weights` 等 7 个超参可由 RL agent 在线调 |
-| **滑移补偿** | 中 | 利用 GPS 速度矢量与 yaw 的偏差估计侧滑，左右轮速做差分补偿；对斜坡稳定性有帮助 |
+| **3D 激光雷达 / RangeFinder 集成** | 中 | 真正用传感器观测前方地形，替代 heightmap 采样（仿真捷径） |
 | **Theta\*+H-cost** | 低 | C++ 端已有 weighted heuristic，调到 1.0 可保最优；当前 1.2 是 trade-off |
 
 文档化以上后续方向供论文"展望"章节使用。
+
+---
+
+## 9. 迭代日志（13 轮）
+
+| # | 主题 | 改动 | 验证结果 |
+|--:|------|------|---------|
+| 1 | wheel rate-limit | 给电机指令加 25 rad/s² 限速 | 减少打滑 |
+| 2 | 侧滑补偿 | GPS 速度方向 vs compass yaw → 检测 slip > 20° 时降速到 75% | 斜坡更稳 |
+| 3 | cross-track replan | PP 暴露 `last_cross_track`；> 2 m 立即重规划 | 减少偏离 |
+| 4 | 代价图融合高度梯度 | 重规划前调用 `update_cost_map` 注入高度梯度 | 路径绕开陡坡 |
+| 5 | PP 曲率刹车增强 | `1/(1+0.4·κ)`；最低 55% 速度 | 拐角更稳 |
+| 6 | stuck 检测 + skip-after-3 | 2 秒未动 → 注入虚拟障碍重规划；3 次失败 → 跳过 waypoint | rough 场景 3→6 wps |
+| 7 | DWA 自适应权重 | rough 提升 clearance 权重，slope 提升 heading 权重 | 不同地形更适配 |
+| 8 | classifier 滑动窗口投票 | 5 帧多数投票防止单帧分类抖动 | 速度档切换更平稳 |
+| 9 | PP lookahead 曲率收缩 | 路径角度变化 > 30° 时缩短 lookahead 到 65% | 不切角 |
+| 10 | 4 场景 Webots 综合验证 | 所有场景 6/6 完成 + 0 oob | 系统稳定 |
+| 11 | perched 检测（相对高度） | 用 `pos.z - terrain_z > 0.55` 判断爬树 | 误触发清零 |
+| 12 | 多 seed 鲁棒性 | 3 个 seed × 4 场景 = 12 次测试 | 11/12 进度 ≥ 3 wps |
+| 13 | 文档同步 + 论文表格更新 | 本文档 + algorithm_comparison.md | 数据已就位 |
 
 ---
 

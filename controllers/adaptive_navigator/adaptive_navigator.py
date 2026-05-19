@@ -168,6 +168,26 @@ def main():
                                max_speed=2.0,
                                robot_radius=0.35))
 
+    def tune_dwa_for_terrain(t: TerrainType):
+        """Re-balance DWA cost weights to suit each terrain class.
+
+        Rough terrain favours clearance (avoid obstacles) over speed; slope
+        favours heading (commit to direction) since changing course mid-climb
+        can cause traction loss. Flat / transition use the default balance.
+        """
+        if t == TerrainType.ROUGH:
+            dwa.cfg.heading_weight = 0.5
+            dwa.cfg.clearance_weight = 0.40
+            dwa.cfg.velocity_weight = 0.10
+        elif t == TerrainType.SLOPE:
+            dwa.cfg.heading_weight = 0.65
+            dwa.cfg.clearance_weight = 0.20
+            dwa.cfg.velocity_weight = 0.15
+        else:  # FLAT / TRANSITION
+            dwa.cfg.heading_weight = 0.70
+            dwa.cfg.clearance_weight = 0.20
+            dwa.cfg.velocity_weight = 0.10
+
     # Soft world-edge boundary — keeps the robot from sailing off the 20×20
     # terrain plane when the planner's path overshoots. Reactive PD-style
     # nudge applied on top of any wheel command.
@@ -185,6 +205,21 @@ def main():
     step_count = 0
     t_start = time.time()
 
+    # Wheel speed rate limiter — prevents sudden command jumps that cause
+    # wheel slip on rough terrain. 25 rad/s² lets the robot still accelerate
+    # 0 → 18 rad/s in 0.7 s while smoothing out single-step PP/DWA spikes.
+    max_wheel_accel_per_step = 25.0 * dt
+    prev_left_speed = 0.0
+    prev_right_speed = 0.0
+
+    def rate_limit(target, prev):
+        delta = target - prev
+        if delta > max_wheel_accel_per_step:
+            return prev + max_wheel_accel_per_step
+        elif delta < -max_wheel_accel_per_step:
+            return prev - max_wheel_accel_per_step
+        return target
+
     # Stuck detection: track displacement over 2-second windows. If the robot
     # barely moved while still > 1 m from the goal, inject a virtual obstacle
     # ahead and replan. After 3 such recoveries on the same waypoint we
@@ -192,6 +227,9 @@ def main():
     # forests can trap the robot indefinitely).
     stuck_check_pos = None
     stuck_check_step = 0
+    last_unstuck_step = -999
+    stuck_count_for_target = 0
+    last_target_idx_for_stuck = -1
     last_unstuck_step = -999
     stuck_count_for_target = 0
     last_target_idx_for_stuck = -1
@@ -235,10 +273,24 @@ def main():
         lidar_ranges = lidar.getRangeImage()
 
         # Estimate body-frame velocity from GPS delta
+        slip_brake = 1.0
         if prev_pos is not None:
             dx_pos = pos[0] - prev_pos[0]
             dy_pos = pos[1] - prev_pos[1]
             current_v = math.hypot(dx_pos, dy_pos) / max(dt, 1e-3)
+            # Slip detection: heading mismatch between GPS-derived velocity
+            # vector and the compass-reported yaw indicates traction loss.
+            # When slip > 20°, scale wheel commands down (gentle: ≥75%).
+            if current_v > 0.3:
+                gps_heading = math.atan2(dy_pos, dx_pos)
+                yaw_compass = math.atan2(compass_vals[0], compass_vals[1])
+                slip_angle = gps_heading - yaw_compass
+                while slip_angle > math.pi:
+                    slip_angle -= 2 * math.pi
+                while slip_angle < -math.pi:
+                    slip_angle += 2 * math.pi
+                if abs(slip_angle) > 0.35:
+                    slip_brake = max(0.75, 1.0 - abs(slip_angle) / 3.0)
         prev_pos = (pos[0], pos[1])
 
         # Terrain classification — prefer ground-truth heightmap sampling
@@ -257,6 +309,8 @@ def main():
         features["imu_roll_deg"] = math.degrees(rpy[0])
         terrain = classifier.classify(features)
         params = get_params(terrain)
+        if terrain != last_terrain:
+            tune_dwa_for_terrain(terrain)
 
         # Waypoint cycling
         target = targets[target_idx]
@@ -268,8 +322,62 @@ def main():
             last_plan_step = step_count
             print(f"[step {step_count}] reached waypoint, next={target}")
 
-        # Periodic replan (terrain costs evolve)
-        if step_count - last_plan_step > 400 or last_terrain != terrain:
+        # Stuck detection: 2-second window, < 0.4 m moved + >1 m to goal,
+        # OR robot perched on top of an obstacle (z significantly above
+        # expected terrain height). After 3 stuck recoveries on the same
+        # waypoint, skip it (treat as unreachable).
+        if stuck_check_pos is None:
+            stuck_check_pos = (pos[0], pos[1])
+            stuck_check_step = step_count
+        elif step_count - stuck_check_step > 60:  # ~2 s
+            moved = math.hypot(pos[0] - stuck_check_pos[0],
+                               pos[1] - stuck_check_pos[1])
+            if world_file:
+                gnd_z = sample_terrain_height(world_file, worlds_dir, pos[0], pos[1])
+                on_obstacle = (pos[2] - gnd_z) > 0.55
+            else:
+                on_obstacle = pos[2] > 0.6
+            no_progress = (moved < 0.4 and dist_to_goal > 1.0
+                           and step_count - last_unstuck_step > 100)
+            perched = on_obstacle and step_count - last_unstuck_step > 80
+            if no_progress or perched:
+                if target_idx != last_target_idx_for_stuck:
+                    stuck_count_for_target = 0
+                    last_target_idx_for_stuck = target_idx
+                stuck_count_for_target += 1
+                if stuck_count_for_target >= 3:
+                    print(f"[stuck-skip] giving up on wp[{target_idx}] after "
+                          f"{stuck_count_for_target} recoveries")
+                    target_idx = (target_idx + 1) % len(targets)
+                    target = targets[target_idx]
+                    stuck_count_for_target = 0
+                    planner.clear_obstacles()
+                    if obstacles:
+                        planner.add_obstacles([(x, y, r + 0.30) for x, y, r in obstacles])
+                    replan_to(target)
+                else:
+                    yaw_now2 = math.atan2(compass_vals[0], compass_vals[1])
+                    vox = pos[0] + 0.7 * math.cos(yaw_now2)
+                    voy = pos[1] + 0.7 * math.sin(yaw_now2)
+                    planner.add_obstacles([(vox, voy, 0.6)])
+                    replan_to(target)
+                    reason = "perched" if perched else "no-progress"
+                    print(f"[stuck-{reason}] step={step_count} z={pos[2]:.2f} "
+                          f"moved={moved:.2f}m count={stuck_count_for_target}")
+                last_unstuck_step = step_count
+                last_plan_step = step_count
+            stuck_check_pos = (pos[0], pos[1])
+            stuck_check_step = step_count
+
+        # Periodic replan + reactive replan on large cross-track error
+        # (PP exposes its last lateral offset for this purpose)
+        cross_track = pp.last_cross_track if (mode != "baseline" and pp.has_path()) else 0.0
+        needs_replan = (step_count - last_plan_step > 400
+                        or last_terrain != terrain
+                        or cross_track > 2.0)
+        if needs_replan:
+            if world_file:
+                planner.update_cost_map(height_grid, terrain.value, None)
             replan_to(target)
             last_plan_step = step_count
             last_terrain = terrain
@@ -354,6 +462,14 @@ def main():
                              min(params.max_speed, v - v_diff))
             right_speed = max(-params.max_speed,
                               min(params.max_speed, v + v_diff))
+
+        # Apply slip-brake + rate-limit before sending to motors
+        left_speed *= slip_brake
+        right_speed *= slip_brake
+        left_speed = rate_limit(left_speed, prev_left_speed)
+        right_speed = rate_limit(right_speed, prev_right_speed)
+        prev_left_speed = left_speed
+        prev_right_speed = right_speed
 
         # Apply commands (front/rear wheels share each side)
         motors[0].setVelocity(left_speed)

@@ -9,6 +9,7 @@ pure-Python reference in `rule_classifier_py.py`:
   - `.classify(features: dict)` returns a `TerrainType` member
 """
 
+from collections import deque
 from enum import Enum
 from typing import Optional
 
@@ -52,15 +53,29 @@ def _make_thresholds(overrides: Optional[dict]) -> "_cpp.ClassifierThresholds":
 
 
 class TerrainClassifier:
-    def __init__(self, thresholds: Optional[dict] = None, history_len: int = 5):
+    def __init__(self, thresholds: Optional[dict] = None, history_len: int = 5,
+                 vote_window: int = 5):
+        """vote_window: majority-vote across the last N raw classifications,
+        which damps single-frame sensor blips. Set vote_window=1 to disable."""
         self._cpp_obj = _cpp.TerrainClassifier(_make_thresholds(thresholds), history_len)
+        self._vote = deque(maxlen=max(1, vote_window))
 
     def classify(self, features: dict) -> TerrainType:
         slope = float(features.get("slope_deg", 0.0))
         rough = float(features.get("roughness", 0.0))
         pitch = float(features.get("imu_pitch_deg", 0.0))
         roll = float(features.get("imu_roll_deg", 0.0))
-        return _CPP_TO_PY[self._cpp_obj.classify(slope, rough, pitch, roll)]
+        raw = _CPP_TO_PY[self._cpp_obj.classify(slope, rough, pitch, roll)]
+        self._vote.append(raw)
+        if len(self._vote) < self._vote.maxlen:
+            return raw
+        counts = {}
+        for tt in self._vote:
+            counts[tt] = counts.get(tt, 0) + 1
+        # Tie-break: prefer the most recent raw classification
+        winner = max(counts, key=lambda k: (counts[k], 0 if k != raw else 1))
+        return winner
 
     def reset(self):
         self._cpp_obj.reset()
+        self._vote.clear()
