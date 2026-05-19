@@ -131,7 +131,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--world", default="rough_terrain.wbt")
     p.add_argument("--controller", default="adaptive_navigator",
-                   choices=["adaptive_navigator", "astar_navigator"])
+                   choices=["adaptive_navigator", "adaptive_navigator_baseline", "astar_navigator"])
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--sim-seconds", type=float, default=25.0,
                    help="simulated wall-clock to run before the controller exits")
