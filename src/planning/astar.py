@@ -32,17 +32,26 @@ _TERRAIN_NAME_TO_CPP = {
 
 class AStarPlanner:
     def __init__(self, grid_size: float = 0.5, world_size: float = 20.0,
-                 heuristic_weight: float = 1.3):
+                 heuristic_weight: float = 1.3,
+                 use_any_angle: bool = False):
+        """Grid-based path planner.
+
+        ``use_any_angle=True`` switches the C++ backend from 8-connected A*
+        to Theta* — any-angle paths with line-of-sight smoothing. Recommended
+        for the optimised navigation stack so the Pure-Pursuit tracker
+        receives straighter, fewer-corner paths.
+        """
         self.grid_size = grid_size
         self.world_size = world_size
         self.grid_dim = int(world_size / grid_size)
         self.heuristic_weight = heuristic_weight
+        self.use_any_angle = use_any_angle
 
         cfg = _cpp.PlannerConfig()
         cfg.grid_size = grid_size
         cfg.world_size = world_size
         cfg.heuristic_weight = heuristic_weight
-        cfg.use_theta_star = False  # match Python reference: 8-connected A*
+        cfg.use_theta_star = bool(use_any_angle)
         self._planner = _cpp.GridPlanner(cfg)
 
         # Mirror cost map (numpy) — kept for API compatibility; updated by
@@ -125,8 +134,43 @@ class AStarPlanner:
                     if 0 <= nx < self.grid_dim and 0 <= ny < self.grid_dim:
                         self.cost_map[nx, ny] = 999.0
 
+    def _is_goal_blocked(self, goal_world: Tuple[float, float]) -> bool:
+        """Return True when the goal cell sits inside an obstacle."""
+        gx, gy = self.world_to_grid(*goal_world)
+        return bool(self.cost_map[gx, gy] >= 999.0)
+
+    def _nearest_free_cell(self, gx: int, gy: int, max_ring: int = 6) -> Optional[Tuple[int, int]]:
+        """BFS outward from (gx, gy) to find the nearest non-obstacle cell."""
+        if self.cost_map[gx, gy] < 999.0:
+            return (gx, gy)
+        for ring in range(1, max_ring + 1):
+            for dx in range(-ring, ring + 1):
+                for dy in (-ring, ring):
+                    nx, ny = gx + dx, gy + dy
+                    if 0 <= nx < self.grid_dim and 0 <= ny < self.grid_dim:
+                        if self.cost_map[nx, ny] < 999.0:
+                            return (nx, ny)
+            for dy in range(-ring + 1, ring):
+                for dx in (-ring, ring):
+                    nx, ny = gx + dx, gy + dy
+                    if 0 <= nx < self.grid_dim and 0 <= ny < self.grid_dim:
+                        if self.cost_map[nx, ny] < 999.0:
+                            return (nx, ny)
+        return None
+
     def plan(self, start_world: Tuple[float, float],
              goal_world: Tuple[float, float]) -> Optional[List[Tuple[float, float]]]:
+        # When the goal sits inside an obstacle, check whether any nearby
+        # free cell can serve as a substitute.  If nothing within 3 m is
+        # reachable, report failure.
+        if self._is_goal_blocked(goal_world):
+            gx, gy = self.world_to_grid(*goal_world)
+            replacement = self._nearest_free_cell(gx, gy,
+                                                  max_ring=int(3.0 / self.grid_size))
+            if replacement is None:
+                return None
+            goal_world = self.grid_to_world(*replacement)
+
         path = self._planner.plan(tuple(start_world), tuple(goal_world))
         if not path:
             return None

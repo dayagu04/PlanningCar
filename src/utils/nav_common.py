@@ -68,18 +68,27 @@ def open_log_file(project_root: str, filename: str = "navigation.csv"):
 
 def differential_wheel_speeds(beta: float, params,
                               prev_beta: float = 0.0,
-                              dt: float = 0.032) -> Tuple[float, float]:
+                              dt: float = 0.032,
+                              forward_target: float = None) -> Tuple[float, float]:
     """Map heading error and motion params to (left, right) wheel speeds.
 
     PD controller on heading + speed shaping:
-    - if the target lies behind the robot, spin in place
-    - otherwise drive forward, scaling speed down with |beta| so the robot
-      slows in tight turns and goes full-throttle when aligned
-    The optional ``prev_beta``/``dt`` enable a derivative term that damps
-    oscillation at high speed; callers that don't track previous beta can
-    leave them at defaults for pure-P behavior.
+    - drives forward at all times unless ``|beta| > 5π/6`` (target almost
+      directly behind); below that threshold we drive *and* turn, instead of
+      grinding to a halt every time the heading is off-axis
+    - forward speed scales smoothly with alignment but never drops below
+      ``params.align_floor`` × max_speed (so the robot keeps moving in turns)
+    - PD derivative damps oscillation at high speed
+    - ``forward_target`` (optional) overrides the alignment-shaped speed,
+      e.g. used by Pure Pursuit and DWA so the planner — not the heading-PD —
+      decides cruising speed
     """
-    if abs(beta) > math.pi / 2:
+    floor = getattr(params, "align_floor", 0.3)
+
+    # Reverse-spin region: only when target is almost directly behind.
+    # The old threshold (π/2) made the robot stop and spin on every turn;
+    # 5π/6 ≈ 150° keeps forward motion through any normal navigation turn.
+    if abs(beta) > 5 * math.pi / 6:
         spin_speed = params.max_speed * 0.7
         return (-spin_speed, spin_speed) if beta > 0 else (spin_speed, -spin_speed)
 
@@ -89,12 +98,16 @@ def differential_wheel_speeds(beta: float, params,
     d_beta = (beta - prev_beta) / max(dt, 1e-3)
     turn = kp * beta + kd * d_beta
 
-    # Forward speed shaping: 100% when |beta|≈0, 30% when |beta|≈π/2
+    # Forward speed shaping with raised floor (drive while turning).
+    # cos(beta) ∈ [cos(5π/6), 1] = [-0.866, 1] in this branch; clamp ≥0.
     align = max(0.0, math.cos(beta))
-    forward = params.max_speed * (0.3 + 0.7 * align)
+    if forward_target is not None:
+        forward = max(0.0, min(forward_target, params.max_speed))
+    else:
+        forward = params.max_speed * (floor + (1.0 - floor) * align)
 
     # Saturate turn so neither wheel exceeds max_speed
-    max_turn = params.max_speed * 0.7
+    max_turn = params.max_speed * 0.8
     turn = max(-max_turn, min(max_turn, turn))
 
     left = forward - turn

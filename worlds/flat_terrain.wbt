@@ -253,7 +253,8 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_fl"
-          maxVelocity 15
+          maxVelocity 20
+          maxTorque 8.0
         }
       ]
       endPoint Solid {
@@ -266,15 +267,15 @@ Robot {
               roughness 0.8
             }
             geometry Cylinder {
-              height 0.04
-              radius 0.06
+              height 0.05
+              radius 0.10
             }
           }
         ]
         name "wheel_fl"
         boundingObject Cylinder {
-          height 0.04
-          radius 0.06
+          height 0.05
+          radius 0.10
         }
         physics Physics {
           density 500
@@ -289,7 +290,8 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_fr"
-          maxVelocity 15
+          maxVelocity 20
+          maxTorque 8.0
         }
       ]
       endPoint Solid {
@@ -302,15 +304,15 @@ Robot {
               roughness 0.8
             }
             geometry Cylinder {
-              height 0.04
-              radius 0.06
+              height 0.05
+              radius 0.10
             }
           }
         ]
         name "wheel_fr"
         boundingObject Cylinder {
-          height 0.04
-          radius 0.06
+          height 0.05
+          radius 0.10
         }
         physics Physics {
           density 500
@@ -325,7 +327,8 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_rl"
-          maxVelocity 15
+          maxVelocity 20
+          maxTorque 8.0
         }
       ]
       endPoint Solid {
@@ -338,15 +341,15 @@ Robot {
               roughness 0.8
             }
             geometry Cylinder {
-              height 0.04
-              radius 0.06
+              height 0.05
+              radius 0.10
             }
           }
         ]
         name "wheel_rl"
         boundingObject Cylinder {
-          height 0.04
-          radius 0.06
+          height 0.05
+          radius 0.10
         }
         physics Physics {
           density 500
@@ -361,7 +364,8 @@ Robot {
       device [
         RotationalMotor {
           name "wheel_rr"
-          maxVelocity 15
+          maxVelocity 20
+          maxTorque 8.0
         }
       ]
       endPoint Solid {
@@ -374,15 +378,15 @@ Robot {
               roughness 0.8
             }
             geometry Cylinder {
-              height 0.04
-              radius 0.06
+              height 0.05
+              radius 0.10
             }
           }
         ]
         name "wheel_rr"
         boundingObject Cylinder {
-          height 0.04
-          radius 0.06
+          height 0.05
+          radius 0.10
         }
         physics Physics {
           density 500
@@ -390,12 +394,13 @@ Robot {
       }
     }
   ]
+  supervisor TRUE
   name "adaptive_robot"
   boundingObject Box {
     size 0.4 0.3 0.1
   }
   physics Physics {
-    density 1000
+    density 700
   }
   controller "adaptive_navigator"
 }

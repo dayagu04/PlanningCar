@@ -10,9 +10,9 @@ simulation:
 
 robot:
   type: "four_wheel_differential"
-  base_max_speed: 7.0
-  wheel_radius: 0.1
-  wheelbase: 0.4
+  base_max_speed: 18.0    # wheel rad/s (see src/control/adaptive_params.py for per-terrain profiles)
+  wheel_radius: 0.10
+  wheelbase: 0.36
 
 sensors:
   lidar:

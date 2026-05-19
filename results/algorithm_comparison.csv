@@ -1,0 +1,13 @@
+scene,controller,completed,reached,total_waypoints,steps,sim_time_s,path_length_m,avg_speed_mps,speed_std_mps,yaw_smoothness_rad,collisions
+flat_clear,baseline,True,4,4,1043,33.25,58.372,1.756,0.158,0.01899,0
+flat_clear,optimised,True,4,4,1115,35.55,58.763,1.653,0.338,0.03492,0
+flat_obstacles,baseline,True,4,4,1138,36.29,63.925,1.762,0.148,0.01294,0
+flat_obstacles,optimised,True,4,4,1204,38.4,64.147,1.67,0.327,0.03287,0
+cluttered_field,baseline,False,0,3,5000,160.0,7.787,0.049,0.287,0.00179,4854
+cluttered_field,optimised,True,3,3,3310,105.82,169.209,1.599,0.388,0.03271,103
+slope_climb,baseline,False,0,2,5000,160.0,10.139,0.063,0.327,0.00158,4812
+slope_climb,optimised,True,2,2,743,23.71,36.876,1.555,0.484,0.0626,0
+rough_zigzag,baseline,False,3,4,5000,159.9,43.536,0.272,0.544,0.00847,3980
+rough_zigzag,optimised,True,4,4,1517,48.42,62.263,1.286,0.196,0.01909,0
+transition_corridor,baseline,True,4,4,1496,47.74,70.271,1.472,0.111,0.01036,0
+transition_corridor,optimised,True,4,4,1619,51.68,71.237,1.378,0.297,0.03555,0

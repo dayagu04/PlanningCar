@@ -18,11 +18,11 @@ def compute_slope(heights: np.ndarray, cell_size: float = 0.1) -> float:
     return float(_cpp.extract_features(arr, cell_size).slope_deg)
 
 
-def compute_roughness(heights: np.ndarray) -> float:
+def compute_roughness(heights: np.ndarray, cell_size: float = 0.1) -> float:
     if heights.size < 2:
         return 0.0
     arr = np.ascontiguousarray(heights, dtype=np.float64)
-    return float(_cpp.extract_features(arr, 0.1).roughness)
+    return float(_cpp.extract_features(arr, cell_size).roughness)
 
 
 def compute_height_range(heights: np.ndarray) -> float:

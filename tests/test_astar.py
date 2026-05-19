@@ -24,10 +24,25 @@ def test_obstacle_avoidance():
 
 
 def test_no_path_to_obstacle():
+    """Goal deep inside a large obstacle with no free cell within 3 m."""
+    planner = AStarPlanner(grid_size=0.5, world_size=20.0)
+    # radius 5.0 m → all cells within ring=6 (3.0 m search radius) are
+    # blocked (rr=100, max corner dx²+dy² at ring 6 = 72 < 100).
+    planner.set_obstacle(3.0, 3.0, radius=5.0)
+    path = planner.plan((0.0, 0.0), (3.0, 3.0))
+    assert path is None
+
+
+def test_goal_in_small_obstacle_reroutes():
+    """Goal inside a small obstacle — planner finds the nearest free cell."""
     planner = AStarPlanner(grid_size=0.5, world_size=20.0)
     planner.set_obstacle(3.0, 3.0, radius=1.0)
     path = planner.plan((0.0, 0.0), (3.0, 3.0))
-    assert path is None
+    assert path is not None
+    # The path endpoint should be near (3, 3) but not inside the obstacle
+    ex, ey = path[-1]
+    dist_to_obs = ((ex - 3.0) ** 2 + (ey - 3.0) ** 2) ** 0.5
+    assert dist_to_obs < 3.0  # within replacement search radius
 
 
 def test_terrain_cost_affects_path():

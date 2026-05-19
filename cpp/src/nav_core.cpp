@@ -59,7 +59,7 @@ TerrainFeatures extract_features(const double* heights, int rows, int cols,
     const int n = rows * cols;
     if (n < 2 || heights == nullptr) return f;
 
-    // 均值
+    // Mean / min / max / range
     double sum = 0.0, hmin = heights[0], hmax = heights[0];
     for (int k = 0; k < n; ++k) {
         sum += heights[k];
@@ -68,15 +68,7 @@ TerrainFeatures extract_features(const double* heights, int rows, int cols,
     }
     const double mean = sum / static_cast<double>(n);
 
-    // 粗糙度（去均值后标准差）
-    double sq = 0.0;
-    for (int k = 0; k < n; ++k) {
-        const double d = heights[k] - mean;
-        sq += d * d;
-    }
-    const double rough = std::sqrt(sq / static_cast<double>(n));
-
-    // 平均梯度幅值（中心差分；边界用单侧差分）
+    // Average gradient magnitude (central diff; one-sided at edges)
     double grad_sum = 0.0;
     int grad_n = 0;
     for (int r = 0; r < rows; ++r) {
@@ -98,6 +90,46 @@ TerrainFeatures extract_features(const double* heights, int rows, int cols,
     }
     const double mean_grad = grad_n > 0 ? grad_sum / grad_n : 0.0;
     const double slope_deg = std::atan(mean_grad) * 180.0 / 3.14159265358979323846;
+
+    // Roughness = std of residuals after subtracting the best-fit plane
+    //   z(r, c) ≈ a*c + b*r + h0     (least-squares fit on the grid)
+    // For uniformly-spaced grids the normal equations decouple — Sxx, Syy
+    // depend only on grid size — so we get away with three accumulators.
+    // Mean centred coordinates avoid the constant term.
+    const double crow = (rows - 1) * 0.5;
+    const double ccol = (cols - 1) * 0.5;
+    double Sxx = 0.0, Syy = 0.0, Sxy = 0.0;
+    double Sxz = 0.0, Syz = 0.0;
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            const double xc = (c - ccol) * cell_size;
+            const double yr = (r - crow) * cell_size;
+            const double z  = heights[r * cols + c] - mean;
+            Sxx += xc * xc;
+            Syy += yr * yr;
+            Sxy += xc * yr;
+            Sxz += xc * z;
+            Syz += yr * z;
+        }
+    }
+    // Solve [Sxx Sxy; Sxy Syy] [a; b] = [Sxz; Syz]
+    double a = 0.0, b = 0.0;
+    const double det = Sxx * Syy - Sxy * Sxy;
+    if (std::fabs(det) > 1e-12) {
+        a = (Sxz * Syy - Syz * Sxy) / det;
+        b = (Syz * Sxx - Sxz * Sxy) / det;
+    }
+    double sq_resid = 0.0;
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            const double xc = (c - ccol) * cell_size;
+            const double yr = (r - crow) * cell_size;
+            const double z  = heights[r * cols + c] - mean;
+            const double resid = z - (a * xc + b * yr);
+            sq_resid += resid * resid;
+        }
+    }
+    const double rough = std::sqrt(sq_resid / static_cast<double>(n));
 
     f.slope_deg = slope_deg;
     f.roughness = rough;
