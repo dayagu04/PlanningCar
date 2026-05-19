@@ -1,16 +1,10 @@
-"""Waypoint ordering optimization (TSP) — C++ backed.
+"""Waypoint ordering optimization (TSP solver).
 
-Wraps `nav_core_cpp.optimize_waypoint_order`. The standalone helpers
-`euclidean_distance`, `tour_length`, `nearest_neighbor`, `two_opt` are kept
-in Python: they are small, called rarely from the figure-generation scripts,
-and the heavy lifting (greedy NN + 2-opt) is already done inside
-`optimize_waypoint_order` on the C++ side.
+Uses greedy nearest-neighbor + 2-opt local search to find shortest tour.
 """
 
 import math
 from typing import List, Tuple
-
-from src import nav_core_cpp as _cpp
 
 
 def euclidean_distance(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
@@ -18,6 +12,7 @@ def euclidean_distance(p1: Tuple[float, float], p2: Tuple[float, float]) -> floa
 
 
 def tour_length(start: Tuple[float, float], tour: List[Tuple[float, float]]) -> float:
+    """Compute total length of tour starting from `start`."""
     if not tour:
         return 0.0
     total = euclidean_distance(start, tour[0])
@@ -28,14 +23,11 @@ def tour_length(start: Tuple[float, float], tour: List[Tuple[float, float]]) -> 
 
 def nearest_neighbor(start: Tuple[float, float],
                      waypoints: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """Greedy nearest-neighbor — used by tests and figure scripts.
-
-    Implemented in Python because the C++ side only exposes the full
-    optimize_waypoint_order pipeline, not its individual stages.
-    """
+    """Greedy nearest-neighbor tour."""
     remaining = list(waypoints)
-    tour: List[Tuple[float, float]] = []
+    tour = []
     current = start
+
     while remaining:
         nearest_idx = 0
         nearest_dist = euclidean_distance(current, remaining[0])
@@ -47,22 +39,26 @@ def nearest_neighbor(start: Tuple[float, float],
         next_point = remaining.pop(nearest_idx)
         tour.append(next_point)
         current = next_point
+
     return tour
 
 
 def two_opt(start: Tuple[float, float],
             tour: List[Tuple[float, float]],
             max_iter: int = 100) -> List[Tuple[float, float]]:
-    """2-opt local search — kept in Python for the same reason as nearest_neighbor."""
+    """2-opt local search: reverse segments to reduce tour length."""
     if len(tour) < 4:
         return tour
+
     best = list(tour)
     best_length = tour_length(start, best)
     improved = True
     iteration = 0
+
     while improved and iteration < max_iter:
         improved = False
         iteration += 1
+
         for i in range(len(best) - 1):
             for j in range(i + 1, len(best)):
                 new_tour = best[:i] + best[i:j + 1][::-1] + best[j + 1:]
@@ -71,15 +67,41 @@ def two_opt(start: Tuple[float, float],
                     best = new_tour
                     best_length = new_length
                     improved = True
+
     return best
 
 
 def optimize_waypoint_order(start: Tuple[float, float],
                             waypoints: List[Tuple[float, float]]) -> Tuple[List[Tuple[float, float]], dict]:
-    """Greedy NN + 2-opt waypoint ordering. C++ accelerated."""
+    """Optimize waypoint visit order to minimize total distance.
+
+    Args:
+        start: Robot starting position
+        waypoints: List of waypoints to visit
+
+    Returns:
+        (optimized_tour, info_dict) where info_dict contains:
+            - original_length: tour length with input order
+            - greedy_length: after nearest-neighbor
+            - optimized_length: after 2-opt
+            - improvement_pct: percentage improvement
+    """
     if not waypoints:
         return [], {"original_length": 0, "greedy_length": 0, "optimized_length": 0, "improvement_pct": 0}
-    tour, info = _cpp.optimize_waypoint_order(tuple(start), [tuple(p) for p in waypoints])
-    # C++ returns list of pairs — normalise to list of tuples for callers that
-    # compare against the input set (`set(optimized) == set(waypoints)`)
-    return [tuple(p) for p in tour], dict(info)
+
+    original_length = tour_length(start, waypoints)
+    greedy_tour = nearest_neighbor(start, waypoints)
+    greedy_length = tour_length(start, greedy_tour)
+    optimized_tour = two_opt(start, greedy_tour)
+    optimized_length = tour_length(start, optimized_tour)
+
+    improvement = 100 * (original_length - optimized_length) / original_length if original_length > 0 else 0
+
+    info = {
+        "original_length": original_length,
+        "greedy_length": greedy_length,
+        "optimized_length": optimized_length,
+        "improvement_pct": improvement,
+    }
+
+    return optimized_tour, info

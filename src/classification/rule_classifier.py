@@ -1,8 +1,18 @@
-"""rule-based terrain classifier: flat / slope / rough / transition."""
+"""Rule-based terrain classifier — C++ backed.
 
-import math
+Wraps `nav_core_cpp.TerrainClassifier`. Maintains the same public API as the
+pure-Python reference in `rule_classifier_py.py`:
+
+  - `TerrainType` is a Python Enum with values "flat" / "slope" / "rough" / "transition"
+    (kept hashable so it can index motion-parameter tables in `adaptive_params.py`)
+  - `TerrainClassifier()` accepts optional `thresholds` dict and `history_len`
+  - `.classify(features: dict)` returns a `TerrainType` member
+"""
+
 from enum import Enum
-from collections import deque
+from typing import Optional
+
+from src import nav_core_cpp as _cpp
 
 
 class TerrainType(Enum):
@@ -10,6 +20,14 @@ class TerrainType(Enum):
     SLOPE = "slope"
     ROUGH = "rough"
     TRANSITION = "transition"
+
+
+_CPP_TO_PY = {
+    _cpp.TerrainType.FLAT: TerrainType.FLAT,
+    _cpp.TerrainType.SLOPE: TerrainType.SLOPE,
+    _cpp.TerrainType.ROUGH: TerrainType.ROUGH,
+    _cpp.TerrainType.TRANSITION: TerrainType.TRANSITION,
+}
 
 
 DEFAULT_THRESHOLDS = {
@@ -24,38 +42,25 @@ DEFAULT_THRESHOLDS = {
 }
 
 
+def _make_thresholds(overrides: Optional[dict]) -> "_cpp.ClassifierThresholds":
+    t = _cpp.ClassifierThresholds()
+    if overrides:
+        for k, v in overrides.items():
+            if hasattr(t, k):
+                setattr(t, k, float(v))
+    return t
+
+
 class TerrainClassifier:
-    def __init__(self, thresholds: dict = None, history_len: int = 5):
-        self.t = thresholds or DEFAULT_THRESHOLDS
-        self.history = deque(maxlen=history_len)
-
-    def _classify_static(self, features: dict) -> TerrainType:
-        slope = features.get("slope_deg", 0.0)
-        rough = features.get("roughness", 0.0)
-        imu_pitch = abs(features.get("imu_pitch_deg", 0.0))
-        imu_roll = abs(features.get("imu_roll_deg", 0.0))
-
-        if imu_pitch >= self.t["slope_imu_pitch_min"] and rough < self.t["slope_roughness_max"]:
-            return TerrainType.SLOPE
-
-        if rough >= self.t["rough_roughness_min"] or imu_roll >= self.t["rough_imu_roll_min"]:
-            return TerrainType.ROUGH
-
-        if (slope < self.t["flat_slope_max"]
-                and rough < self.t["flat_roughness_max"]
-                and imu_pitch < self.t["flat_imu_pitch_max"]):
-            return TerrainType.FLAT
-
-        if slope >= self.t["slope_angle_min"]:
-            return TerrainType.SLOPE
-
-        return TerrainType.TRANSITION
+    def __init__(self, thresholds: Optional[dict] = None, history_len: int = 5):
+        self._cpp_obj = _cpp.TerrainClassifier(_make_thresholds(thresholds), history_len)
 
     def classify(self, features: dict) -> TerrainType:
-        current = self._classify_static(features)
-        self.history.append(current)
-        if len(self.history) >= 3 and len(set(list(self.history)[-3:])) > 1:
-            recent = list(self.history)[-3:]
-            if len(set(recent)) >= 3:
-                return TerrainType.TRANSITION
-        return current
+        slope = float(features.get("slope_deg", 0.0))
+        rough = float(features.get("roughness", 0.0))
+        pitch = float(features.get("imu_pitch_deg", 0.0))
+        roll = float(features.get("imu_roll_deg", 0.0))
+        return _CPP_TO_PY[self._cpp_obj.classify(slope, rough, pitch, roll)]
+
+    def reset(self):
+        self._cpp_obj.reset()

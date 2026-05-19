@@ -84,7 +84,7 @@ def main():
     cmd = [
         cxx,
         "-O3", "-Wall", "-Wextra", "-std=c++17",
-        "-shared", "-static-libgcc", "-static-libstdc++",
+        "-shared", "-static", "-static-libgcc", "-static-libstdc++",
         f"-I{work_inc}",
         f"-I{py_inc}",
         f"-I{pb_inc}",
