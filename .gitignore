@@ -26,6 +26,14 @@ results/reports/*.pdf
 .DS_Store
 Thumbs.db
 
+# Office documents (kept out to avoid 100MB GitHub limit)
+*.pptx
+*.ppt
+*.docx
+*.doc
+*.xlsx
+*.xls
+
 # Webots
 *.wbproj
 controllers/*/build/
