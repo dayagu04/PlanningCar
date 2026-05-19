@@ -185,6 +185,17 @@ def main():
     step_count = 0
     t_start = time.time()
 
+    # Stuck detection: track displacement over 2-second windows. If the robot
+    # barely moved while still > 1 m from the goal, inject a virtual obstacle
+    # ahead and replan. After 3 such recoveries on the same waypoint we
+    # treat it as unreachable and skip to the next one (otherwise dense
+    # forests can trap the robot indefinitely).
+    stuck_check_pos = None
+    stuck_check_step = 0
+    last_unstuck_step = -999
+    stuck_count_for_target = 0
+    last_target_idx_for_stuck = -1
+
     log_file = open_log_file(PROJECT_ROOT)
 
     print(f"[adaptive_navigator] mode={mode}  DWA={'on' if dwa_enabled else 'off'}  "

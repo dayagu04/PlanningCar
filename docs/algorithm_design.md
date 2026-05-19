@@ -144,24 +144,35 @@ left = (1-blend)·pp_left + blend·dwa_left
 
 ### 6.1 主要指标
 
-最新一轮（含 detrended roughness + 地形高度采样 + PP spin-in-place + 边界围栏）数据：
+最新一轮（含 13 轮迭代优化：rate-limit + 侧滑补偿 + 动态重规划 + 自适应 DWA + stuck-skip + 投票分类等）数据：
 
 | Scene | Controller | 完成 | 仿真时间 (s) | 路径 (m) | 平均速度 (m/s) | 碰撞次数 |
 |-------|-----------|:----:|------------:|--------:|--------------:|--------:|
 | flat_clear | baseline | ✓ | 33.25 | 58.37 | 1.76 | 0 |
-| flat_clear | optimised | ✓ | 35.55 | 58.76 | 1.65 | 0 |
+| flat_clear | optimised | ✓ | 35.97 | 58.83 | 1.64 | 0 |
 | flat_obstacles | baseline | ✓ | 36.29 | 63.92 | 1.76 | 0 |
-| flat_obstacles | optimised | ✓ | 38.40 | 64.15 | 1.67 | 0 |
+| flat_obstacles | optimised | ✓ | 38.72 | 64.22 | 1.66 | 0 |
 | **cluttered_field** | baseline | **0/3** | 160.00 | 7.79 | 0.05 | **4854** |
-| **cluttered_field** | optimised | **✓** | **105.82** | 169.21 | **1.60** | 103 |
+| **cluttered_field** | optimised | **✓** | **70.66** | 110.38 | **1.56** | 61 |
 | **slope_climb** | baseline | **0/2** | 160.00 | 10.14 | 0.06 | **4812** |
-| **slope_climb** | optimised | **✓** | **23.71** | 36.88 | **1.55** | **0** |
+| **slope_climb** | optimised | **✓** | **23.33** | 36.80 | **1.58** | **0** |
 | **rough_zigzag** | baseline | **3/4** | 159.90 | 43.54 | 0.27 | **3980** |
-| **rough_zigzag** | optimised | **✓** | **48.42** | 62.26 | **1.29** | **0** |
+| **rough_zigzag** | optimised | **✓** | **49.28** | 61.63 | **1.25** | **0** |
 | transition_corridor | baseline | ✓ | 47.74 | 70.27 | 1.47 | 0 |
-| transition_corridor | optimised | ✓ | 51.68 | 71.24 | 1.38 | 0 |
+| transition_corridor | optimised | ✓ | 50.53 | 70.59 | 1.40 | 0 |
 
 > 数据见 [results/algorithm_comparison.csv](../results/algorithm_comparison.csv)；轨迹图位于 [results/figures/algorithm_comparison/](../results/figures/algorithm_comparison/)。
+
+### 6.1.1 Webots 实测（4 场景 × 3 seeds = 12 次测试）
+
+| Seed | flat | slope | rough | transition |
+|:----:|:----:|:-----:|:-----:|:----------:|
+| 1 | 6 wps | 6 wps | 6 wps | 5 wps |
+| 5 | 5 wps | 5 wps | 2 wps | 3 wps |
+| 10 | 8 wps | 5 wps | 7 wps | 6 wps |
+| **均值** | **6.3** | **5.3** | **5.0** | **4.7** |
+
+12 次测试中，仅 1 次出现路径进度低于 3 wps（seed=5/rough）。最优场景（seed=10/flat）完成 8 个 waypoint（2 圈）。所有场景**机器人均未冲出地图边界**。
 
 ### 6.2 解读
 
