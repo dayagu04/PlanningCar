@@ -48,11 +48,11 @@ PROFILES = {
         MotionParams(max_speed=18.0, turn_gain=2.5, accel_limit=5.0,
                      max_lookahead=2.0, align_floor=0.70),
     TerrainType.ROUGH:
-        MotionParams(max_speed=14.0, turn_gain=2.2, accel_limit=4.0,
-                     max_lookahead=1.2, align_floor=0.55),
-    TerrainType.TRANSITION:
-        MotionParams(max_speed=15.0, turn_gain=2.8, accel_limit=5.0,
+        MotionParams(max_speed=15.5, turn_gain=2.2, accel_limit=4.5,
                      max_lookahead=1.5, align_floor=0.60),
+    TerrainType.TRANSITION:
+        MotionParams(max_speed=16.0, turn_gain=2.8, accel_limit=5.0,
+                     max_lookahead=1.6, align_floor=0.60),
 }
 
 
