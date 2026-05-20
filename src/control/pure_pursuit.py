@@ -201,10 +201,14 @@ class PurePursuit:
         L = max(self.lookahead_min, min(upper, L))
         if dist_to_goal is not None:
             L = max(self.lookahead_min, min(L, dist_to_goal))
-        if path_curvature is not None and path_curvature > 0.5:
-            # >29°: only shrink lookahead on truly sharp bends; keep ≥0.65×
-            # so lookahead can still preview the curve.
-            curve_factor = max(0.65, 1.0 - 0.25 * (path_curvature - 0.5))
+        if path_curvature is not None and path_curvature > 0.3:
+            # Sigmoid taper: smooth transition from straight (curve=0.3) to
+            # sharp bend (curve=1.5). Floor at 0.60× to preserve preview.
+            # Formula: factor = 0.60 + 0.40 / (1 + exp(5*(curve - 0.8)))
+            import math as m
+            x = 5.0 * (path_curvature - 0.8)
+            sigmoid = 1.0 / (1.0 + m.exp(min(20.0, max(-20.0, x))))
+            curve_factor = max(0.60, 0.60 + 0.40 * sigmoid)
             L = max(self.lookahead_min, L * curve_factor)
         return L
 
