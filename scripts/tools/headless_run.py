@@ -153,6 +153,9 @@ def main():
                    help="Per-worker isolation directory: holds runtime_config.json "
                         "and navigation.csv for this run only. Without this flag "
                         "the legacy shared paths under data/ are used.")
+    p.add_argument("--port", type=int, default=0,
+                   help="Webots TCP port for extern controllers. Use unique ports "
+                        "for parallel instances (0 = let Webots pick).")
     args = p.parse_args()
 
     if not os.path.exists(WEBOTS_EXE):
@@ -202,12 +205,12 @@ def main():
     env["KIROZ_LOG_DIR"] = log_dir
     env["KIROZ_LOG_NAME"] = log_name
     if args.visual:
-        # Visual mode: full rendering, real-time speed, no batch exit
         cmd = [WEBOTS_EXE, "--mode=realtime", "--stdout", "--stderr", temp_world]
     else:
-        # Headless mode: no rendering, fast sim, batch auto-exit
         cmd = [WEBOTS_EXE, "--batch", "--mode=fast", "--no-rendering",
                "--stdout", "--stderr", temp_world]
+    if args.port > 0:
+        cmd.insert(-1, f"--port={args.port}")
 
     print(f"[headless] world={args.world} ctrl={args.controller} "
           f"seed={args.seed} sim_s={args.sim_seconds} "

@@ -38,3 +38,6 @@ Thumbs.db
 # Webots
 *.wbproj
 controllers/*/build/
+
+# Parallel experiment workdirs (ephemeral)
+data/_workdirs/
