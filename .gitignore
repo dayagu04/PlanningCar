@@ -14,7 +14,8 @@ env/
 .idea/
 *.swp
 *~
-
+#ai
+.claude/
 data/logs/*.csv
 data/logs/*.log
 data/experiments/*.csv

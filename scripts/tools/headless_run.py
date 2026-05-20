@@ -13,6 +13,12 @@ Usage:
         --log-tag rough_run1
 
 Output: data/logs/headless_<tag>.log + data/logs/navigation.csv
+
+Parallel runs (added in `infra/parallel-experiments`):
+The `--workdir` flag isolates the runtime config, the navigation log and the
+patched temp world per worker. With it, multiple Webots instances can run
+simultaneously without stomping on each other's shared files. Backwards
+compatible: omitting the flag keeps the legacy single-shot paths.
 """
 
 import argparse
@@ -24,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from typing import List, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -41,7 +48,8 @@ WEBOTS_EXE = r"C:\Program Files\Webots\msys64\mingw64\bin\webots.exe"
 
 def patch_world(world_file: str, controller: str,
                 robot_start: Tuple[float, float],
-                waypoints: List[Tuple[float, float]]) -> str:
+                waypoints: List[Tuple[float, float]],
+                temp_suffix: str = "_temp") -> str:
     src = os.path.join(WORLDS_DIR, world_file)
     with open(src, "r", encoding="utf-8") as f:
         content = f.read()
@@ -105,14 +113,14 @@ def patch_world(world_file: str, controller: str,
     if robot_idx != -1:
         content = content[:robot_idx] + markers_str + content[robot_idx:]
 
-    out = src.replace(".wbt", "_temp.wbt")
+    out = src.replace(".wbt", f"{temp_suffix}.wbt")
     with open(out, "w", encoding="utf-8") as f:
         f.write(content)
     return out
 
 
-def write_runtime_cfg(world_file, robot_start, waypoints, obstacles, sim_seconds,
-                      controller_mode):
+def write_runtime_cfg(cfg_path, world_file, robot_start, waypoints, obstacles,
+                      sim_seconds, controller_mode):
     cfg = {
         "robot_start": list(robot_start),
         "waypoints": [list(wp) for wp in waypoints],
@@ -122,8 +130,8 @@ def write_runtime_cfg(world_file, robot_start, waypoints, obstacles, sim_seconds
         "controller_mode": controller_mode,
         "dwa_enabled": True,
     }
-    os.makedirs(os.path.dirname(RUNTIME_CONFIG), exist_ok=True)
-    with open(RUNTIME_CONFIG, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
+    with open(cfg_path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
 
 
@@ -141,6 +149,10 @@ def main():
     p.add_argument("--mode", default="optimised", choices=["optimised", "baseline"])
     p.add_argument("--visual", action="store_true",
                    help="Launch with full 3D rendering (for observation)")
+    p.add_argument("--workdir", default=None,
+                   help="Per-worker isolation directory: holds runtime_config.json "
+                        "and navigation.csv for this run only. Without this flag "
+                        "the legacy shared paths under data/ are used.")
     args = p.parse_args()
 
     if not os.path.exists(WEBOTS_EXE):
@@ -156,15 +168,39 @@ def main():
                                         seed=args.seed)
     waypoints, tsp_info = optimize_waypoint_order(robot_start, raw_wps)
 
-    write_runtime_cfg(args.world, robot_start, waypoints, obstacles,
-                      args.sim_seconds, args.mode)
-    temp_world = patch_world(args.world, args.controller, robot_start, waypoints)
+    # Worker isolation: route shared files into a per-run workdir so multiple
+    # Webots instances can execute simultaneously without overwriting each
+    # other's runtime config / navigation log / patched world.
+    if args.workdir:
+        workdir = os.path.abspath(args.workdir)
+        os.makedirs(workdir, exist_ok=True)
+        runtime_cfg_path = os.path.join(workdir, "runtime_config.json")
+        log_dir = workdir
+        log_name = "navigation.csv"
+        # Suffix the temp world with workdir basename so two workers can run
+        # the same terrain simultaneously without colliding on *_temp.wbt.
+        temp_suffix = f"_temp_{os.path.basename(workdir)}"
+    else:
+        runtime_cfg_path = RUNTIME_CONFIG
+        log_dir = LOGS_DIR
+        log_name = "navigation.csv"
+        temp_suffix = "_temp"
+
+    write_runtime_cfg(runtime_cfg_path, args.world, robot_start, waypoints,
+                      obstacles, args.sim_seconds, args.mode)
+    temp_world = patch_world(args.world, args.controller, robot_start, waypoints,
+                             temp_suffix=temp_suffix)
 
     os.makedirs(LOGS_DIR, exist_ok=True)
     log_path = os.path.join(LOGS_DIR, f"headless_{args.log_tag}.log")
 
     env = os.environ.copy()
     env["WEBOTS_HOME"] = r"C:\Program Files\Webots"
+    # Tell the controller (which is launched by Webots, not by us) where to
+    # find this run's config and where to write its log.
+    env["KIROZ_RUNTIME_CONFIG"] = runtime_cfg_path
+    env["KIROZ_LOG_DIR"] = log_dir
+    env["KIROZ_LOG_NAME"] = log_name
     if args.visual:
         # Visual mode: full rendering, real-time speed, no batch exit
         cmd = [WEBOTS_EXE, "--mode=realtime", "--stdout", "--stderr", temp_world]
@@ -176,6 +212,8 @@ def main():
     print(f"[headless] world={args.world} ctrl={args.controller} "
           f"seed={args.seed} sim_s={args.sim_seconds} "
           f"wall_timeout={args.wall_timeout}s")
+    if args.workdir:
+        print(f"[headless] workdir={workdir}")
     print(f"[headless] start={robot_start}, {len(waypoints)} waypoints")
     print(f"[headless] log -> {log_path}")
     t0 = time.time()

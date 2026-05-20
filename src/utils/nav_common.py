@@ -55,10 +55,17 @@ def lidar_to_height_grid(lidar_ranges: Iterable[float]) -> np.ndarray:
 
 
 def open_log_file(project_root: str, filename: str = "navigation.csv"):
-    """Create data/logs/<filename>, writing the standard header."""
-    log_dir = os.path.join(project_root, "data", "logs")
+    """Create the navigation log file and write the standard header.
+
+    Parallel-experiment override: env vars `KIROZ_LOG_DIR` and `KIROZ_LOG_NAME`
+    redirect the file to a worker-private path so multiple Webots instances
+    do not stomp on each other's logs. Default behaviour (data/logs/navigation.csv)
+    is preserved when the env vars are unset.
+    """
+    log_dir = os.environ.get("KIROZ_LOG_DIR") or os.path.join(project_root, "data", "logs")
+    log_name = os.environ.get("KIROZ_LOG_NAME") or filename
     os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, filename)
+    log_path = os.path.join(log_dir, log_name)
     log_file = open(log_path, "w", encoding="utf-8")
     log_file.write(
         "step,time_s,x,y,z,roll,pitch,yaw,terrain,speed,target_idx,dist_to_target\n"
