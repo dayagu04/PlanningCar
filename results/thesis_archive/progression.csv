@@ -4,3 +4,4 @@ iter,date,topic,accept,success_overall,path_eff_overall,classification_acc_overa
 2,2026-05-20,DWA velocity_weight tuning (rough/slope/flat),Y,1.0000,0.1997,0.8018,24058.64,30.48,0.0931,5.60
 3,2026-05-20,ROUGH speed+lookahead increase (REJECTED),N,0.9500,0.1390,0.8390,26332.09,33.78,0.0900,9.05
 4,2026-05-20,wheel rate limiter 25->20 rad/s2,Y,1.0000,0.2056,0.8057,23932.13,27.94,0.0841,4.70
+5,2026-05-20,align_floor 0.55->0.65 (FLAT/ROUGH/TRANS),Y,1.0000,0.2106,0.8073,24043.65,28.74,0.0838,5.10
