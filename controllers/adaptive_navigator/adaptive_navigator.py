@@ -62,8 +62,15 @@ GOAL_TOLERANCE = 1.0  # m — goal-reach radius (wider than legacy 0.8 to handle
 
 
 def load_runtime_config():
-    """Read waypoints + controller flags from runtime_config.json."""
-    cfg_path = os.path.join(PROJECT_ROOT, "data", "runtime_config.json")
+    """Read waypoints + controller flags from runtime_config.json.
+
+    Parallel-experiment override: env var `KIROZ_RUNTIME_CONFIG` points at a
+    worker-private config file so multiple Webots instances can run in parallel
+    without sharing the same data/runtime_config.json.
+    """
+    cfg_path = os.environ.get("KIROZ_RUNTIME_CONFIG") or os.path.join(
+        PROJECT_ROOT, "data", "runtime_config.json"
+    )
     cfg = {}
     if os.path.exists(cfg_path):
         try:

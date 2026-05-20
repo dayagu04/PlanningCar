@@ -14,7 +14,8 @@ env/
 .idea/
 *.swp
 *~
-
+#ai
+.claude/
 data/logs/*.csv
 data/logs/*.log
 data/experiments/*.csv
@@ -37,3 +38,6 @@ Thumbs.db
 # Webots
 *.wbproj
 controllers/*/build/
+
+# Parallel experiment workdirs (ephemeral)
+data/_workdirs/
