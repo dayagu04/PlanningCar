@@ -310,12 +310,13 @@ class PurePursuit:
         # Soft brake on tight curvature (gentle on near-straight, biting on hairpins).
         brake = 1.0 / (1.0 + 0.25 * abs(kappa))
         v *= max(0.65, brake)
-        # End-of-path linear taper: 0.5·v at d=0, 1.0·v at d≥2 m.
-        # Combined with a hard brake when the controller declares the goal
-        # reached, this is enough to stop overshooting without giving up
-        # cruising speed on long open segments.
-        if dist_to_goal is not None and dist_to_goal < 2.0:
-            v *= 0.5 + 0.25 * dist_to_goal
+        # End-of-path cosine taper: 0.4·v at d=0, 1.0·v at d≥2.5 m.
+        # Cosine profile gives smoother deceleration than linear, reducing
+        # the energy spike at the goal entry transition.
+        if dist_to_goal is not None and dist_to_goal < 2.5:
+            ratio = dist_to_goal / 2.5
+            cos_factor = 0.5 - 0.5 * math.cos(math.pi * ratio)
+            v *= 0.4 + 0.6 * cos_factor
         v_diff = kappa * v * wheelbase * 0.5
         left = v - v_diff
         right = v + v_diff
