@@ -6,6 +6,7 @@ This index tracks all iterations in chronological order. Each row represents one
 |------|--------|-------|--------|-----------|------------|-------------|-----|--------|
 | 00 | iter/00-baseline | Baseline establishment | ✓ | - (100% adaptive) | - (0.175 adaptive) | - | iter-00-baseline | [iter_00_baseline.md](iter_00_baseline.md) |
 | 01 | iter/01-classifier-rough-imu-features | Classifier vote_window 5→9 + recent_bias | ✓ | 0% (100%→100%) | -7.6% (CV>15%) | - | iter-01-merged | [iter_01.md](iter_01.md) |
+| 02 | iter/02-dwa-rough-velocity-weight | DWA velocity_weight tuning all terrains | ✓ | 0% (100%→100%) | +23.8% | - | iter-02-merged | [iter_02.md](iter_02.md) |
 
 ---
 

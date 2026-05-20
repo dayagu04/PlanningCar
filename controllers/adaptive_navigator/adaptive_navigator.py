@@ -176,17 +176,17 @@ def main():
         can cause traction loss. Flat / transition use the default balance.
         """
         if t == TerrainType.ROUGH:
-            dwa.cfg.heading_weight = 0.5
-            dwa.cfg.clearance_weight = 0.40
-            dwa.cfg.velocity_weight = 0.10
+            dwa.cfg.heading_weight = 0.45
+            dwa.cfg.clearance_weight = 0.35
+            dwa.cfg.velocity_weight = 0.20
         elif t == TerrainType.SLOPE:
+            dwa.cfg.heading_weight = 0.60
+            dwa.cfg.clearance_weight = 0.20
+            dwa.cfg.velocity_weight = 0.20
+        else:  # FLAT / TRANSITION
             dwa.cfg.heading_weight = 0.65
             dwa.cfg.clearance_weight = 0.20
             dwa.cfg.velocity_weight = 0.15
-        else:  # FLAT / TRANSITION
-            dwa.cfg.heading_weight = 0.70
-            dwa.cfg.clearance_weight = 0.20
-            dwa.cfg.velocity_weight = 0.10
 
     # Soft world-edge boundary — keeps the robot from sailing off the 20×20
     # terrain plane when the planner's path overshoots. Reactive PD-style
