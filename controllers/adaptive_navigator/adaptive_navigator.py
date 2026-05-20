@@ -206,9 +206,9 @@ def main():
     t_start = time.time()
 
     # Wheel speed rate limiter — prevents sudden command jumps that cause
-    # wheel slip on rough terrain. 25 rad/s² lets the robot still accelerate
-    # 0 → 18 rad/s in 0.7 s while smoothing out single-step PP/DWA spikes.
-    max_wheel_accel_per_step = 25.0 * dt
+    # wheel slip on rough terrain. 20 rad/s² lets the robot accelerate
+    # 0 → 18 rad/s in 0.9 s while smoothing out single-step PP/DWA spikes.
+    max_wheel_accel_per_step = 20.0 * dt
     prev_left_speed = 0.0
     prev_right_speed = 0.0
 
