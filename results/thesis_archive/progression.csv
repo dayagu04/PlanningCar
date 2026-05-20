@@ -2,3 +2,4 @@ iter,date,topic,accept,success_overall,path_eff_overall,classification_acc_overa
 0,2026-05-20,baseline establishment,Y,1.0000,0.1747,0.8034,31282.96,26.53,0.0888,5.75
 1,2026-05-20,classifier vote_window 5->9 + recent_bias,Y,1.0000,0.1614,0.8368,24746.58,29.30,0.0976,6.45
 2,2026-05-20,DWA velocity_weight tuning (rough/slope/flat),Y,1.0000,0.1997,0.8018,24058.64,30.48,0.0931,5.60
+3,2026-05-20,ROUGH speed+lookahead increase (REJECTED),N,0.9500,0.1390,0.8390,26332.09,33.78,0.0900,9.05
