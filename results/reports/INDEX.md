@@ -9,6 +9,7 @@ This index tracks all iterations in chronological order. Each row represents one
 | 02 | iter/02-dwa-rough-velocity-weight | DWA velocity_weight tuning all terrains | ✓ | 0% (100%→100%) | +23.8% | - | iter-02-merged | [iter_02.md](iter_02.md) |
 | 03 | iter/03-rough-speed-lookahead | ROUGH max_speed 14→15.5 + lookahead 1.2→1.5 | ✗ | -5% (100%→95%) | -30.4% | - | - | [REJECTED] slope success 80% |
 | 04 | iter/04-wheel-rate-limiter-smoothing | Wheel rate limiter 25→20 rad/s² | ✓ | 0% (100%→100%) | +3.0% | - | iter-04-merged | time -8.4%, replan -16.1% |
+| 05 | iter/05-align-floor-boost | align_floor 0.55→0.65 (FLAT/ROUGH/TRANS) | ✓ | 0% (100%→100%) | +2.4% | - | iter-05-merged | marginal; path_eff +2.4% |
 
 ---
 
