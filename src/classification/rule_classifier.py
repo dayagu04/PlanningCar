@@ -54,11 +54,18 @@ def _make_thresholds(overrides: Optional[dict]) -> "_cpp.ClassifierThresholds":
 
 class TerrainClassifier:
     def __init__(self, thresholds: Optional[dict] = None, history_len: int = 5,
-                 vote_window: int = 5):
+                 vote_window: int = 9, recent_bias_window: int = 3):
         """vote_window: majority-vote across the last N raw classifications,
-        which damps single-frame sensor blips. Set vote_window=1 to disable."""
+        which damps single-frame sensor blips. Set vote_window=1 to disable.
+
+        recent_bias_window: when the top two terrain types are within 1 vote,
+        use the majority of the last K frames as tie-breaker. This prevents
+        a slow drift away from the current terrain class when noise produces
+        an ambiguous mix (e.g. ROUGH state polluted by occasional FLAT frames).
+        """
         self._cpp_obj = _cpp.TerrainClassifier(_make_thresholds(thresholds), history_len)
         self._vote = deque(maxlen=max(1, vote_window))
+        self._recent_bias_window = max(1, min(recent_bias_window, vote_window))
 
     def classify(self, features: dict) -> TerrainType:
         slope = float(features.get("slope_deg", 0.0))
@@ -69,12 +76,33 @@ class TerrainClassifier:
         self._vote.append(raw)
         if len(self._vote) < self._vote.maxlen:
             return raw
+
+        # Count votes across the full window
         counts = {}
         for tt in self._vote:
             counts[tt] = counts.get(tt, 0) + 1
-        # Tie-break: prefer the most recent raw classification
-        winner = max(counts, key=lambda k: (counts[k], 0 if k != raw else 1))
-        return winner
+
+        # Find top candidates
+        sorted_counts = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)
+        top_type, top_n = sorted_counts[0]
+
+        # If top is unambiguous (margin >= 2), return it directly
+        if len(sorted_counts) == 1 or top_n - sorted_counts[1][1] >= 2:
+            return top_type
+
+        # Tie or near-tie: bias toward the recent K-frame majority.
+        # This stabilises the output during noisy stretches where ROUGH
+        # and FLAT alternate frame-by-frame on physically-rough terrain.
+        recent = list(self._vote)[-self._recent_bias_window:]
+        recent_counts = {}
+        for tt in recent:
+            recent_counts[tt] = recent_counts.get(tt, 0) + 1
+        recent_winner = max(recent_counts, key=recent_counts.get)
+        # Only use recent bias if recent_winner is among the top two
+        top_two = {kv[0] for kv in sorted_counts[:2]}
+        if recent_winner in top_two:
+            return recent_winner
+        return top_type
 
     def reset(self):
         self._cpp_obj.reset()
