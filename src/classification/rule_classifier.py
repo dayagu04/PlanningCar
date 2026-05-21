@@ -72,7 +72,18 @@ class TerrainClassifier:
         rough = float(features.get("roughness", 0.0))
         pitch = float(features.get("imu_pitch_deg", 0.0))
         roll = float(features.get("imu_roll_deg", 0.0))
-        raw = _CPP_TO_PY[self._cpp_obj.classify(slope, rough, pitch, roll)]
+        # iter22: slope detection must use max(|pitch|, |roll|) instead of
+        # |pitch| alone. A robot driving sideways across a 5° slope sees
+        # pitch≈0 and roll≈5°; the C++ rule (pitch >= 3°) then falls through
+        # to the rough check (roll >= 2°) and mis-classifies the slope as
+        # ROUGH. By feeding max(|pitch|, |roll|) as the pitch coordinate, we
+        # let the C++ slope branch fire regardless of robot heading.
+        # We zero out the raw roll so the rough-by-roll branch doesn't double-
+        # count it. The flat-pitch ceiling and slope-angle fallback are still
+        # exercised correctly because tilt and slope_deg agree on flat ground.
+        tilt = max(abs(pitch), abs(roll))
+        signed_tilt = tilt if pitch >= 0 else -tilt
+        raw = _CPP_TO_PY[self._cpp_obj.classify(slope, rough, signed_tilt, 0.0)]
         self._vote.append(raw)
         if len(self._vote) < self._vote.maxlen:
             return raw
