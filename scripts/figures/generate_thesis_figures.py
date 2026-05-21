@@ -70,7 +70,7 @@ def fig1_system_architecture():
     comp_box(0.18, 0.45, "TSP排序\n2-opt优化", "#FFE0B2", "#E65100")
 
     # Execution layer components
-    comp_box(0.30, 0.22, "差速转向控制\n比例+旋转", "#C8E6C9", "#2E7D32")
+    comp_box(0.30, 0.22, "差速转向控制\nPD+旋转", "#C8E6C9", "#2E7D32")
     comp_box(0.60, 0.22, "四轮电机\nVL / VR", "#C8E6C9", "#2E7D32")
     comp_box(0.82, 0.10, "Webots引擎\nODE物理", "#C8E6C9", "#2E7D32")
 
@@ -166,7 +166,7 @@ def fig2_terrain_classification_flowchart():
     draw_rect(cx, y_feat, "提取地形特征: slope, roughness, height_diff", "#E3F2FD")
     draw_rect(cx, y_imu, "提取IMU姿态: pitch, roll", "#FFF3E0")
 
-    draw_diamond(cx, y_d1, "pitch>=3 且\nroughness<0.05 ?", "#FFEB3B", 8)
+    draw_diamond(cx, y_d1, "max(|pitch|,|roll|)>=3\n且 roughness<0.05 ?", "#FFEB3B", 8)
     draw_output(ox, y_d1, "斜坡 Slope", "#FF9800")
 
     draw_diamond(cx, y_d2, "roughness>=0.05\n或 roll>=2 ?", "#FFEB3B", 8)
@@ -293,24 +293,28 @@ def fig5_adaptive_speed_control():
     """图5 自适应速度控制示意图"""
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Simulated terrain profile
+    # Actual adaptive_params.py: Flat=18, Slope=18, Rough=14 rad/s
+    # wheel radius 0.10m -> linear: Flat=1.80, Slope=1.80, Rough=1.40 m/s
+    WHEEL_R = 0.10
+    V_FLAT = 18.0 * WHEEL_R
+    V_SLOPE = 18.0 * WHEEL_R
+    V_ROUGH = 14.0 * WHEEL_R
+
     x = np.linspace(0, 40, 400)
     terrain_height = np.zeros_like(x)
-    terrain_height[100:150] = (x[100:150] - 10) * 0.1  # Slope up
-    terrain_height[150:250] = 0.5 + 0.1 * np.sin(10 * x[150:250])  # Rough
-    terrain_height[250:300] = 1.0 - (x[250:300] - 25) * 0.1  # Slope down
+    terrain_height[100:150] = (x[100:150] - 10) * np.tan(np.radians(15))
+    peak = (40 - 10) * 0.1 * np.tan(np.radians(15)) * 10
+    terrain_height[150:250] = terrain_height[149] + 0.5 * np.sin(3 * x[150:250])
+    terrain_height[250:300] = terrain_height[249] - (x[250:300] - 25) * 0.08
 
-    # Speed profile
-    speed = np.ones_like(x) * 3.0
-    speed[100:150] = 2.0  # Slope
-    speed[150:250] = 1.5  # Rough
-    speed[250:300] = 2.0  # Slope
+    speed = np.ones_like(x) * V_FLAT
+    speed[100:150] = V_SLOPE
+    speed[150:250] = V_ROUGH
+    speed[250:300] = V_SLOPE
 
-    # Terrain type
     terrain_colors = ['#4CAF50'] * 100 + ['#FF9800'] * 50 + ['#F44336'] * 100 + \
                      ['#FF9800'] * 50 + ['#4CAF50'] * 100
 
-    # Plot
     ax2 = ax.twinx()
 
     for i in range(len(x) - 1):
@@ -318,18 +322,17 @@ def fig5_adaptive_speed_control():
                         color=terrain_colors[i], alpha=0.3)
 
     line1 = ax2.plot(x, speed, 'b-', linewidth=2.5, label='机器人速度 (Robot Speed)')
-    ax2.axhline(y=3.0, color='gray', linestyle='--', alpha=0.5, label='平坦地形速度')
-    ax2.axhline(y=2.0, color='orange', linestyle='--', alpha=0.5, label='斜坡地形速度')
-    ax2.axhline(y=1.5, color='red', linestyle='--', alpha=0.5, label='凹凸地形速度')
+    ax2.axhline(y=V_FLAT, color='gray', linestyle='--', alpha=0.5,
+                label=f'平坦/斜坡 {V_FLAT:.1f} m/s')
+    ax2.axhline(y=V_ROUGH, color='red', linestyle='--', alpha=0.5,
+                label=f'凹凸地形 {V_ROUGH:.1f} m/s')
 
     ax.set_xlabel('距离 (m)\nDistance (m)')
     ax.set_ylabel('地形高度 (m)\nTerrain Height (m)')
-    ax2.set_ylabel('速度 (rad/s)\nSpeed (rad/s)')
+    ax2.set_ylabel('线速度 (m/s)\nLinear Speed (m/s)')
     ax.set_xlim(0, 40)
-    ax.set_ylim(-0.2, 1.5)
-    ax2.set_ylim(0, 4)
+    ax2.set_ylim(0, V_FLAT + 0.5)
 
-    # Legend
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor='#4CAF50', alpha=0.3, label='平坦 (Flat)'),
@@ -344,9 +347,9 @@ def fig5_adaptive_speed_control():
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGURES_DIR, "图5_自适应速度控制示意图.png"), bbox_inches="tight")
+    plt.savefig(os.path.join(FIGURES_DIR, "图5-1_自适应速度控制示意图.png"), bbox_inches="tight")
     plt.close()
-    print("[OK] 图5_自适应速度控制示意图.png")
+    print("[OK] 图5-1_自适应速度控制示意图.png")
 
 
 def main():

@@ -45,7 +45,7 @@ def main():
                                     boxstyle="round,pad=0.015",
                                     edgecolor="#2E7D32", facecolor="#E8F5E9", linewidth=2)
     ax.add_patch(lidar_feat_box)
-    ax.text(0.39, 0.725, "高度网格 (4×4)\n↓\n粗糙度 (roughness)\n坡度 (slope_deg)\n高度差 (height_diff)",
+    ax.text(0.39, 0.725, "高度网格 (5x5)\n-\n粗糙度 (roughness)\n坡度 (slope_deg)\n高度差 (height_diff)",
             ha="center", va="center", fontsize=9, color="#2E7D32")
 
     # IMU features
@@ -53,7 +53,7 @@ def main():
                                   boxstyle="round,pad=0.015",
                                   edgecolor="#BF360C", facecolor="#FBE9E7", linewidth=2)
     ax.add_patch(imu_feat_box)
-    ax.text(0.39, 0.275, "Pitch角 (俯仰)\n→ 检测斜坡\n\nRoll角 (侧倾)\n→ 检测凹凸",
+    ax.text(0.39, 0.275, "max(|Pitch|,|Roll|)\n-> 检测斜坡\n\nRoll角 (侧倾)\n-> 检测凹凸",
             ha="center", va="center", fontsize=9, color="#BF360C")
 
     # --- Right column: Classifier ---

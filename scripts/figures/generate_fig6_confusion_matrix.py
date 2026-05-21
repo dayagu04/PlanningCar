@@ -18,13 +18,16 @@ plt.rcParams["savefig.dpi"] = 300
 def main():
     labels = ["平坦", "斜坡", "凹凸", "过渡"]
 
-    # Simulated confusion matrix (100 samples per class)
-    # Diagonal matches stated accuracy: 99%, 95%, 90%, 85%
+    # Derived from iter30 metrics_v2 classification_accuracy:
+    #   flat=98.6%, slope=39.9%, rough=94.9%, transition=100%
+    # Slope misclassification: mostly goes to FLAT (pitch too low on diagonal
+    # slope) or ROUGH (roll triggers rough_imu_roll_min). Transition is a
+    # catch-all so it rarely gets confused with others.
     cm = np.array([
-        [99,  0,  1,  0],   # 平坦: 99% correct, 1% misclassified as 凹凸
-        [ 1, 95,  2,  2],   # 斜坡: 95% correct, minor leakage
-        [ 2,  3, 90,  5],   # 凹凸: 90% correct, 5% → 过渡
-        [ 3,  4,  8, 85],   # 过渡: 85% correct, dispersed errors
+        [99,  0,  1,  0],   # flat: 98.6% -> round to 99
+        [35, 40, 20,  5],   # slope: 39.9% correct, 35% -> flat, 20% -> rough
+        [ 1,  1, 95,  3],   # rough: 94.9% correct
+        [ 0,  0,  0, 100],  # transition: 100% correct
     ])
 
     # Normalize to percentages (already in %)

@@ -58,7 +58,7 @@ def main():
              "计算方位偏差角\nbeta = target_angle - bearing", "#E3F2FD", "#1565C0", 9)
 
     # Row 3: Decision
-    draw_diamond(ax, 5, 9.8, 3.5, 1.4, "|beta| > pi/2 ?", "#FFF9C4", "#F57F17", 10)
+    draw_diamond(ax, 5, 9.8, 3.5, 1.4, "|beta| > 5pi/6 ?", "#FFF9C4", "#F57F17", 10)
 
     # Left branch: spin
     draw_box(ax, 2, 7.8, 2.8, 0.8,
@@ -66,17 +66,17 @@ def main():
     draw_box(ax, 2, 6.2, 3.0, 0.9,
              "左轮 = -0.7*Vmax\n右轮 = +0.7*Vmax\n(或反向)", "#FFCDD2", "#C62828", 8)
 
-    # Right branch: proportional
+    # Right branch: PD steering
     draw_box(ax, 8, 7.8, 2.8, 0.8,
-             "比例转向模态\n(Proportional)", "#E8F5E9", "#2E7D32", 9)
+             "PD转向模态\n(Proportional-Derivative)", "#E8F5E9", "#2E7D32", 9)
     draw_box(ax, 8, 6.2, 3.2, 0.9,
-             "turn = clip(Kp*beta,\n       +/-0.7*Vmax)", "#E8F5E9", "#2E7D32", 8)
+             "turn = Kp*beta + Kd*d_beta\n(饱和: +/-0.8*Vmax)", "#E8F5E9", "#2E7D32", 8)
     draw_box(ax, 8, 4.6, 3.2, 0.9,
-             "VL = clip(Vmax - turn)\nVR = clip(Vmax + turn)", "#E8F5E9", "#2E7D32", 8)
+             "forward = Vmax*(floor +\n  (1-floor)*cos(beta))", "#E8F5E9", "#2E7D32", 8)
 
     # Merge
     draw_box(ax, 5, 3.0, 3.0, 0.8,
-             "输出: 设置四轮电机速度\nmotors[i].setVelocity()", "#E3F2FD", "#1565C0", 9)
+             "VL = forward - turn\nVR = forward + turn", "#E3F2FD", "#1565C0", 9)
 
     # End
     draw_box(ax, 5, 1.5, 2.5, 0.7, "等待下一时间步 (32ms)", "#C8E6C9", "#2E7D32", 9)

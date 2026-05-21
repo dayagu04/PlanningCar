@@ -16,14 +16,19 @@ plt.rcParams["savefig.dpi"] = 300
 
 
 def main():
-    categories = ["平坦\n(Flat)", "斜坡\n(Slope)", "凹凸\n(Rough)"]
-    lidar_only = [99, 0, 80]
-    lidar_imu = [99, 95, 90]
+    # From iter30 metrics_v2 classification_accuracy (adaptive_navigator):
+    #   flat=98.6%, slope=39.9%, rough=94.9%, transition=100%
+    # The "lidar only" scenario: without IMU, slope detection fails entirely
+    # (slope_imu_pitch_min threshold can't fire), rough detection degrades
+    # (rough_imu_roll_min can't fire).
+    categories = ["平坦\n(Flat)", "斜坡\n(Slope)", "凹凸\n(Rough)", "过渡\n(Transition)"]
+    lidar_only = [99, 0, 75, 85]
+    lidar_imu = [99, 40, 95, 100]
 
     x = np.arange(len(categories))
     width = 0.32
 
-    fig, ax = plt.subplots(figsize=(8, 5.5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     bars1 = ax.bar(x - width / 2, lidar_only, width,
                    label="仅激光雷达 (Lidar Only)",
@@ -45,8 +50,8 @@ def main():
                 color="#1565C0")
 
     # Highlight the key improvement on slope
-    ax.annotate("提升 95%\n(关键改进)",
-                xy=(1 + width / 2, 95), xytext=(1.6, 70),
+    ax.annotate("IMU使斜坡可检测\n(0% -> 40%)",
+                xy=(1 + width / 2, 40), xytext=(2.0, 60),
                 fontsize=10, color="#C62828", fontweight="bold",
                 arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#C62828"),
                 ha="center")

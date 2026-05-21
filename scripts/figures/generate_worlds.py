@@ -9,7 +9,7 @@ WORLDS_DIR = os.path.join(PROJECT_ROOT, "worlds")
 
 TERRAIN_SIZE = 40
 RESOLUTION = 80
-MOTOR_MAX_VELOCITY = 25.0
+MOTOR_MAX_VELOCITY = 20.0
 
 
 def _tree(idx, x, y, z, height=4.0, foliage_color="0.18 0.45 0.18", trunk_color="0.35 0.22 0.12"):
@@ -127,9 +127,9 @@ def robot_node(x=0.0, y=0.0, z=0.2, controller="adaptive_navigator"):
       endPoint Solid {{
         translation 0.15 0.18 -0.03
         rotation 1 0 0 1.5708
-        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.04 radius 0.06 }} }} ]
+        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.05 radius 0.10 }} }} ]
         name "wheel_fl"
-        boundingObject Cylinder {{ height 0.04 radius 0.06 }}
+        boundingObject Cylinder {{ height 0.05 radius 0.10 }}
         physics Physics {{ density 500 }}
       }}
     }}
@@ -139,9 +139,9 @@ def robot_node(x=0.0, y=0.0, z=0.2, controller="adaptive_navigator"):
       endPoint Solid {{
         translation 0.15 -0.18 -0.03
         rotation 1 0 0 1.5708
-        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.04 radius 0.06 }} }} ]
+        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.05 radius 0.10 }} }} ]
         name "wheel_fr"
-        boundingObject Cylinder {{ height 0.04 radius 0.06 }}
+        boundingObject Cylinder {{ height 0.05 radius 0.10 }}
         physics Physics {{ density 500 }}
       }}
     }}
@@ -151,9 +151,9 @@ def robot_node(x=0.0, y=0.0, z=0.2, controller="adaptive_navigator"):
       endPoint Solid {{
         translation -0.15 0.18 -0.03
         rotation 1 0 0 1.5708
-        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.04 radius 0.06 }} }} ]
+        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.05 radius 0.10 }} }} ]
         name "wheel_rl"
-        boundingObject Cylinder {{ height 0.04 radius 0.06 }}
+        boundingObject Cylinder {{ height 0.05 radius 0.10 }}
         physics Physics {{ density 500 }}
       }}
     }}
@@ -163,16 +163,16 @@ def robot_node(x=0.0, y=0.0, z=0.2, controller="adaptive_navigator"):
       endPoint Solid {{
         translation -0.15 -0.18 -0.03
         rotation 1 0 0 1.5708
-        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.04 radius 0.06 }} }} ]
+        children [ Shape {{ appearance PBRAppearance {{ baseColor 0.1 0.1 0.1 roughness 0.8 }} geometry Cylinder {{ height 0.05 radius 0.10 }} }} ]
         name "wheel_rr"
-        boundingObject Cylinder {{ height 0.04 radius 0.06 }}
+        boundingObject Cylinder {{ height 0.05 radius 0.10 }}
         physics Physics {{ density 500 }}
       }}
     }}
   ]
   name "adaptive_robot"
   boundingObject Box {{ size 0.4 0.3 0.1 }}
-  physics Physics {{ density 1000 }}
+  physics Physics {{ density 700 }}
   controller "{controller}"
 }}'''
 
