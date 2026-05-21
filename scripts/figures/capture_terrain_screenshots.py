@@ -83,7 +83,7 @@ def assemble(shots):
         ax.axis("off")
 
     plt.tight_layout()
-    save_path = os.path.join(FIGURES_DIR, "图3-2_四种地形仿真场景.png")
+    save_path = os.path.join(FIGURES_DIR, "图3-2b_四种地形仿真场景_Webots截图.png")
     plt.savefig(save_path, bbox_inches="tight", facecolor="white")
     plt.close()
     print(f"[OK] {save_path}")

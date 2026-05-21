@@ -80,7 +80,7 @@ def main():
 
     plt.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.02,
                         hspace=0.25, wspace=0.1)
-    save_path = os.path.join(FIGURES_DIR, "图3-2_四种地形仿真场景.png")
+    save_path = os.path.join(FIGURES_DIR, "图3-2a_四种地形仿真场景_3D示意图.png")
     plt.savefig(save_path, bbox_inches="tight", facecolor="white")
     plt.close()
     print(f"[OK] {save_path}")
