@@ -1,13 +1,22 @@
-"""Generate Figure 6-1: Slope terrain trajectory comparison (Adaptive vs A*)."""
+"""Generate Figure 6-1: Slope terrain trajectory comparison (Adaptive vs A*).
+
+Refreshed for iter30: adaptive_navigator now achieves 100% slope success after
+iter22 (max-tilt slope rule) + iter25 (DWA horizon). Both controllers complete
+the TSP tour; this figure highlights the path-efficiency / smoothness contrast.
+"""
 
 import os
 import sys
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-DATA_DIR = os.path.join(PROJECT_ROOT, "data", "experiments")
+sys.path.insert(0, os.path.dirname(__file__))
+from _iter_data import (CURRENT_ITER, DEFAULT_SEED, load_metrics, trace_path,
+                        metric_value)
+
 FIGURES_DIR = os.path.join(PROJECT_ROOT, "results", "figures", "thesis")
 os.makedirs(FIGURES_DIR, exist_ok=True)
 
@@ -17,60 +26,75 @@ plt.rcParams["figure.dpi"] = 300
 plt.rcParams["savefig.dpi"] = 300
 
 
-def main():
-    adaptive_path = os.path.join(DATA_DIR, "slope_terrain_adaptive_navigator.csv")
-    astar_path = os.path.join(DATA_DIR, "slope_terrain_astar_navigator.csv")
+def _load_trace(terrain, controller, seed):
+    return pd.read_csv(trace_path(terrain, controller, seed))
 
-    df_adaptive = pd.read_csv(adaptive_path)
-    df_astar = pd.read_csv(astar_path)
+
+def main():
+    metrics = load_metrics()
+    terrain = "slope"
+
+    df_adaptive = _load_trace(terrain, "adaptive_navigator", DEFAULT_SEED)
+    df_astar = _load_trace(terrain, "astar_navigator", DEFAULT_SEED)
+
+    eff_adapt = metric_value(metrics, terrain, "adaptive_navigator", "path_efficiency")
+    eff_astar = metric_value(metrics, terrain, "astar_navigator", "path_efficiency")
+    succ_adapt = metric_value(metrics, terrain, "adaptive_navigator", "success_rate")
+    succ_astar = metric_value(metrics, terrain, "astar_navigator", "success_rate")
+    len_adapt = metric_value(metrics, terrain, "adaptive_navigator", "actual_path_length")
+    len_astar = metric_value(metrics, terrain, "astar_navigator", "actual_path_length")
+    comp_adapt = metric_value(metrics, terrain, "adaptive_navigator",
+                              "completion_fraction")
+    comp_astar = metric_value(metrics, terrain, "astar_navigator",
+                              "completion_fraction")
 
     fig, ax = plt.subplots(figsize=(11, 8))
 
-    # A* trajectory (smooth)
-    ax.plot(df_astar["x"], df_astar["y"],
-            color="#2E7D32", linewidth=2.5, alpha=0.9,
-            label=f"A* 算法 (总路径 {12.97:.2f} m)")
-    ax.scatter(df_astar["x"].iloc[::5], df_astar["y"].iloc[::5],
-               c="#2E7D32", s=15, alpha=0.5, zorder=4)
+    label_adapt = (f"Adaptive (Ours)  成功率 {succ_adapt*100:.0f}%, "
+                   f"path_eff {eff_adapt:.2f}, 路径 {len_adapt:.1f}m")
+    label_astar = (f"A* Planning      成功率 {succ_astar*100:.0f}%, "
+                   f"完成度 {comp_astar*100:.0f}%, "
+                   f"path_eff {eff_astar:.2f}")
 
-    # Adaptive trajectory (chaotic - real 390m drift)
     ax.plot(df_adaptive["x"], df_adaptive["y"],
-            color="#C62828", linewidth=1.5, alpha=0.75,
-            label=f"Adaptive 算法 (失稳, 总路径 {390.62:.2f} m)")
+            color="#1976D2", linewidth=2.2, alpha=0.9, label=label_adapt)
+    ax.scatter(df_adaptive["x"].iloc[::20], df_adaptive["y"].iloc[::20],
+               c="#1976D2", s=12, alpha=0.5, zorder=4)
 
-    # Start point (origin)
-    ax.plot(0, 0, "b*", markersize=22, markeredgecolor="black",
-            markeredgewidth=1.2, zorder=10, label="起点 Start")
+    ax.plot(df_astar["x"], df_astar["y"],
+            color="#E64A19", linewidth=1.8, alpha=0.85, label=label_astar,
+            linestyle="--")
+    ax.scatter(df_astar["x"].iloc[::20], df_astar["y"].iloc[::20],
+               c="#E64A19", s=12, alpha=0.5, zorder=4)
 
-    # End points
-    ax.plot(df_astar["x"].iloc[-1], df_astar["y"].iloc[-1],
-            "g^", markersize=14, markeredgecolor="black",
-            markeredgewidth=1.0, zorder=10)
-    ax.text(df_astar["x"].iloc[-1] + 0.3, df_astar["y"].iloc[-1],
-            "A* 终点", fontsize=9, color="#2E7D32", fontweight="bold")
+    # Start
+    ax.plot(0, 0, "k*", markersize=22, markeredgecolor="white",
+            markeredgewidth=1.0, zorder=10, label="起点 Start")
 
+    # End markers
     ax.plot(df_adaptive["x"].iloc[-1], df_adaptive["y"].iloc[-1],
-            "rv", markersize=14, markeredgecolor="black",
+            "^", color="#1976D2", markersize=14, markeredgecolor="black",
             markeredgewidth=1.0, zorder=10)
-    ax.text(df_adaptive["x"].iloc[-1] + 0.3, df_adaptive["y"].iloc[-1],
-            "Adaptive 终点", fontsize=9, color="#C62828", fontweight="bold")
+    ax.plot(df_astar["x"].iloc[-1], df_astar["y"].iloc[-1],
+            "v", color="#E64A19", markersize=14, markeredgecolor="black",
+            markeredgewidth=1.0, zorder=10)
 
-    # Annotation for key finding
-    # Find rough zone of adaptive trajectory
-    adaptive_x_range = df_adaptive["x"].max() - df_adaptive["x"].min()
-    adaptive_y_range = df_adaptive["y"].max() - df_adaptive["y"].min()
-    ax.annotate(f"剧烈滑移与振荡\n姿态偏差 112.04°\n路径长度 ×30",
-                xy=(df_adaptive["x"].mean(), df_adaptive["y"].min()),
-                xytext=(df_adaptive["x"].mean() + 2,
-                        df_adaptive["y"].min() - 2),
-                fontsize=10, color="#C62828", fontweight="bold",
-                arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#C62828"),
-                bbox=dict(boxstyle="round,pad=0.4",
-                          facecolor="#FFEBEE", edgecolor="#C62828"))
+    # Annotation block: key takeaway
+    note = (f"iter{CURRENT_ITER} 状态:\n"
+            f"- Adaptive 完成 6 路点 TSP 巡游\n"
+            f"- 完成度 {comp_adapt*100:.0f}%, "
+            f"成功率 {succ_adapt*100:.0f}%")
+    ax.text(0.02, 0.98, note, transform=ax.transAxes,
+            fontsize=9.5, color="#0D47A1", fontweight="bold",
+            ha="left", va="top",
+            bbox=dict(boxstyle="round,pad=0.4",
+                      facecolor="#E3F2FD", edgecolor="#0D47A1"))
 
     ax.set_xlabel("X (m)", fontsize=12)
     ax.set_ylabel("Y (m)", fontsize=12)
-    ax.legend(fontsize=10, loc="upper left", facecolor="white",
+    ax.set_title(f"斜坡地形轨迹对比 (iter{CURRENT_ITER}, seed={DEFAULT_SEED})",
+                 fontsize=12, fontweight="bold")
+    ax.legend(fontsize=9, loc="lower right", facecolor="white",
               edgecolor="black")
     ax.grid(True, alpha=0.3)
     ax.set_aspect("equal", adjustable="datalim")

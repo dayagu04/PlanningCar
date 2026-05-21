@@ -1,19 +1,28 @@
-iter,date,topic,accept,success_overall,path_eff_overall,classification_acc_overall,energy_overall,time_to_goal_overall,cross_track_mean_overall,replan_count_overall
-0,2026-05-20,baseline establishment,Y,1.0000,0.1747,0.8034,31282.96,26.53,0.0888,5.75
-1,2026-05-20,classifier vote_window 5->9 + recent_bias,Y,1.0000,0.1614,0.8368,24746.58,29.30,0.0976,6.45
-2,2026-05-20,DWA velocity_weight tuning (rough/slope/flat),Y,1.0000,0.1997,0.8018,24058.64,30.48,0.0931,5.60
-3,2026-05-20,ROUGH speed+lookahead increase (REJECTED),N,0.9500,0.1390,0.8390,26332.09,33.78,0.0900,9.05
-4,2026-05-20,wheel rate limiter 25->20 rad/s2,Y,1.0000,0.2056,0.8057,23932.13,27.94,0.0841,4.70
-5,2026-05-20,align_floor 0.55->0.65 (FLAT/ROUGH/TRANS),Y,1.0000,0.2106,0.8073,24043.65,28.74,0.0838,5.10
-6,2026-05-21,classifier hysteresis (REJECTED),N,1.0000,0.1789,0.8304,24481.26,30.38,0.0969,8.05
-8,2026-05-21,A* terrain cost weights (REJECTED no effect),N,1.0000,0.2106,0.8073,24043.65,28.74,0.0838,5.10
-11,2026-05-21,PP sigmoid lookahead taper,Y,1.0000,0.2220,0.8148,24045.97,28.06,0.0822,5.10
-12,2026-05-21,DWA smoothness penalty (REJECTED 15/60 fail),N,0.2500,0.0130,0.2456,7207.79,4.18,0.0278,1.65
-13,2026-05-21,remove terrain-change replan (REJECTED),N,1.0000,0.1884,0.8110,23516.11,26.75,0.1050,6.80
-14,2026-05-21,PP cosine endgame brake,Y,1.0000,0.2290,0.8400,23815.94,27.76,0.0919,6.05
-15,2026-05-21,PP lookahead_gain 0.4->0.5 (REJECTED),N,1.0000,0.1857,0.8117,24284.93,28.18,0.0892,4.15
-16,2026-05-21,FLAT/TRANS max_lookahead (REJECTED no effect),N,1.0000,0.2290,0.8400,23815.94,27.76,0.0919,6.05
-17,2026-05-21,PP lookahead_base 0.6->0.8 (REJECTED success 95%),N,0.9500,0.1651,0.7824,24458.46,32.82,0.0925,5.25
-18,2026-05-21,DWA graduated blend ramp (REJECTED success 95%),N,0.9500,0.1864,0.8141,23661.60,29.60,0.0987,6.70
-19,2026-05-21,PP lookahead_min 0.4->0.3 (REJECTED no effect),N,1.0000,0.2290,0.8400,23815.94,27.76,0.0919,6.05
-20,2026-05-21,PP curvature brake floor 0.65->0.72 (REJECTED),N,1.0000,0.2152,0.8263,23606.30,35.60,0.0893,4.70
+iter,topic,accept,success_overall,completion_overall,path_eff_overall,rough_completion,rough_success,classification_acc_overall,time_to_goal_overall,cross_track_mean_overall,energy_overall,replan_count_overall
+0,Baseline establishment,Y,0.6,0.7625,0.8943,0.45,0.2,0.8034,22.19,0.0888,31283.0,5.75
+1,Classifier vote_window 5→9 + recent_bias,Y,0.75,0.85,0.8156,0.45,0.2,0.8368,26.86,0.0976,24746.6,6.45
+2,DWA velocity_weight tuning all terrains,Y,0.6,0.75,0.8321,0.3,0.0,0.8018,23.99,0.0931,24058.6,5.6
+4,Wheel rate limiter 25→20 rad/s²,Y,0.7,0.8,0.8038,0.55,0.4,0.8057,30.94,0.0841,23932.1,4.7
+5,align_floor 0.55→0.65 (FLAT/ROUGH/TRANS),Y,0.65,0.7625,0.7759,0.4,0.2,0.8073,31.74,0.0838,24043.6,5.1
+6,Classifier median+hysteresis (confirm_frames=2),N,0.55,0.7625,0.8496,0.45,0.0,0.8304,22.07,0.0969,24481.3,8.05
+8,"A* cost_multipliers ROUGH 3.0→4.5, SLOPE 2.0→2.5",N,0.65,0.7625,0.7759,0.4,0.2,0.8073,31.74,0.0838,24043.6,5.1
+11,PP lookahead sigmoid curvature taper (0.3→1.5 rad),Y,0.6,0.75,0.8527,0.35,0.0,0.8148,24.46,0.0822,24046.0,5.1
+12,DWA yaw_resolution 0.15→0.10 + smoothness penalty 0.10·\,,1.0,1.0,0.927,,,0.9822,20.86,0.1112,28831.2,6.6
+13,Remove `last_terrain != terrain` from replan trigger,N,0.6,0.75,0.7442,0.5,0.2,0.811,36.53,0.105,23516.1,6.8
+14,PP endgame brake linear→cosine (0.5+0.25d → 0.4+0.6cos),Y,0.6,0.7125,0.8237,0.3,0.0,0.84,27.46,0.0919,23815.9,6.05
+15,PP lookahead_gain 0.4→0.5,N,0.65,0.7875,0.83,0.5,0.2,0.8117,29.23,0.0892,24284.9,4.15
+16,"FLAT max_lookahead 1.8→2.2, TRANSITION 1.5→1.8",N,0.6,0.7125,0.8237,0.3,0.0,0.84,27.46,0.0919,23815.9,6.05
+17,PP lookahead_base 0.6→0.8,N,0.65,0.7875,0.7669,0.5,0.2,0.7824,39.42,0.0925,24458.5,5.25
+18,DWA blend binary (0.4@cc>0.5) → ramp (0–0.5),N,0.6,0.7625,0.9117,0.55,0.2,0.8141,23.81,0.0987,23661.6,6.7
+19,PP lookahead_min 0.4→0.3,N,0.6,0.7125,0.8237,0.3,0.0,0.84,27.46,0.0919,23815.9,6.05
+20,PP curvature brake floor 0.65→0.72,N,0.6,0.7375,0.8132,0.35,0.0,0.8263,26.41,0.0893,23606.3,4.7
+21,"stuck-skip threshold 3→5, cooldown 100→200/80→150",N,0.6,0.7125,0.818,0.3,0.0,0.8434,29.42,0.0921,23841.9,5.2
+22,Slope rule: max(\,,0.6,0.75,0.8002,0.4,0.0,0.8359,29.24,0.092,24249.8,5.35
+23,Lidar-targeted virtual obstacle placement,N,0.6,0.7375,0.8067,0.35,0.0,0.8345,28.02,0.094,24268.3,5.55
+24,rough align_floor 0.65→0.85 (adaptive-only override),Y,0.6,0.7625,0.8002,0.45,0.0,0.8347,29.24,0.0899,24264.2,4.7
+25,DWA rough predict_time 1.2→2.0s + clearance 0.35→0.55,Y,0.6,0.7875,0.8027,0.55,0.0,0.8311,28.91,0.0904,24119.6,5.1
+26,Wire elevation_sampler into A* update_cost_map,N,0.6,0.725,0.8526,0.3,0.0,0.8176,34.59,0.0825,25184.8,4.8
+27,"Rough stuck window 60→40, cooldown 100→60",N,0.6,0.75,0.8026,0.4,0.0,0.8361,28.59,0.0955,24158.1,6.3
+28,Reverse wheels 0.5s when perched on rock,N,0.6,0.7875,0.8027,0.55,0.0,0.8311,28.91,0.0904,24119.6,5.1
+29,"DWA rough velocity_weight 0.15→0.25, clearance 0.55→0.45",N,0.65,0.775,0.6929,0.5,0.2,0.8329,44.86,0.0879,24134.4,4.45
+30,Rough replan interval 400→150 steps,Y,0.65,0.775,0.7617,0.5,0.2,0.8336,38.56,0.0904,24090.9,5.2
