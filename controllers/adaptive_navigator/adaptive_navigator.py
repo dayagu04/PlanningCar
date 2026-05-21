@@ -395,7 +395,8 @@ def main():
         # Periodic replan + reactive replan on large cross-track error
         # (PP exposes its last lateral offset for this purpose)
         cross_track = pp.last_cross_track if (mode != "baseline" and pp.has_path()) else 0.0
-        needs_replan = (step_count - last_plan_step > 400
+        replan_interval = 150 if terrain == TerrainType.ROUGH else 400
+        needs_replan = (step_count - last_plan_step > replan_interval
                         or last_terrain != terrain
                         or cross_track > 2.0)
         if needs_replan:
