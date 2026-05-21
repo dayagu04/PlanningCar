@@ -25,6 +25,16 @@ This index tracks all iterations in chronological order. Each row represents one
 | 18 | failed/iter-18-dwa-graduated-blend | DWA blend binary (0.4@cc>0.5) → ramp (0–0.5) | ✗ | -5% (100%→95%) | -18.8% | - | - | [REJECTED] slope success 80%, smoother blend invited DWA into traction zones |
 | 19 | failed/iter-19-no-effect | PP lookahead_min 0.4→0.3 | ✗ | 0% (100%→100%) | +0.0% | - | - | [REJECTED] no effect — sigmoid taper floor 0.60·L still > 0.4 in practice |
 | 20 | failed/iter-20-curvature-brake-floor | PP curvature brake floor 0.65→0.72 | ✗ | 0% (100%→100%) | -6.1% | - | - | [REJECTED] time +28%, looser brake on hairpins kept ω rate-limit pegged |
+| 21 | failed/iter-21-stuck-skip-relaxation | stuck-skip threshold 3→5, cooldown 100→200/80→150 | ✗ | 0% | -3.4% | - | iter-21-rejected | [REJECTED] rough completion stuck at 30%, slope time +15% |
+| 22 | iter/22-classifier-tilt-max | Slope rule: max(\|pitch\|,\|roll\|) instead of \|pitch\| only | ✓ | 0% | +0% | - | iter-22-merged | rough completion 30→40% (rocks now classify as SLOPE → better motion params) |
+| 23 | failed/iter-23-lidar-aware-vobs | Lidar-targeted virtual obstacle placement | ✗ | -5% | -8.2% | - | iter-23-rejected | [REJECTED] duplicated existing inflation; legacy 0.7m-ahead vobs created novel cost forcing alternatives |
+| 24 | iter/24-rough-align-floor | rough align_floor 0.65→0.85 (adaptive-only override) | ✓ | 0% | +0% | - | iter-24-merged | rough completion 40→45%; per-controller dataclasses.replace to avoid eroding baseline gap |
+| 25 | iter/25-dwa-rough-horizon | DWA rough predict_time 1.2→2.0s + clearance 0.35→0.55 | ✓ | 0% | +0% | - | iter-25-merged | rough completion 45→55%; longer horizon plans smoother detours around clusters |
+| 26 | failed/iter-26-elevation-cost-sampler | Wire elevation_sampler into A* update_cost_map | ✗ | -20% | n/a | - | iter-26-rejected | [REJECTED] rough completion 55→30%; per-cell gradient cost made paths over-conservative, longer detours timed out |
+| 27 | failed/iter-27-rough-fast-stuck-recovery | Rough stuck window 60→40, cooldown 100→60 | ✗ | -10% | n/a | - | iter-27-rejected | [REJECTED] rough completion 55→40%; faster detection caused premature waypoint skips |
+| 28 | failed/iter-28-reverse-on-perch | Reverse wheels 0.5s when perched on rock | ✗ | 0% | -6.3% | - | iter-28-rejected | [REJECTED] perch events too rare in test scenarios; near-no-op with slight path_eff regression |
+| 29 | failed/iter-29-dwa-rough-velocity-bias | DWA rough velocity_weight 0.15→0.25, clearance 0.55→0.45 | ✗ | +5% | -11.0% | - | iter-29-rejected | [REJECTED] rough success 0→20% but slope path_eff -11pt (faster but riskier paths) |
+| 30 | iter/30-rough-frequent-replan | Rough replan interval 400→150 steps | ✓ | +5% | +0% per-terrain | - | iter-30-merged | first persistent rough success (0→20%); per-terrain path_eff unchanged, completion within noise |
 
 ---
 
