@@ -25,6 +25,7 @@ import os
 import math
 import json
 import time
+import dataclasses
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
@@ -316,6 +317,14 @@ def main():
         features["imu_roll_deg"] = math.degrees(rpy[0])
         terrain = classifier.classify(features)
         params = get_params(terrain)
+        # iter24: adaptive-only override — boost ROUGH align_floor 0.65->0.85
+        # so the heading-PD oscillations on bumpy terrain don't dip the
+        # alignment-shaped forward speed below stall threshold. We do this
+        # here (not in adaptive_params.PROFILES) to avoid affecting the
+        # baseline controllers, which share the same params module and
+        # whose unchanged behaviour is required for thesis comparison.
+        if terrain == TerrainType.ROUGH:
+            params = dataclasses.replace(params, align_floor=0.85)
         if terrain != last_terrain:
             tune_dwa_for_terrain(terrain)
 
