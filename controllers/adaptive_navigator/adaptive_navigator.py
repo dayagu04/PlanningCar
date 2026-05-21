@@ -182,19 +182,26 @@ def main():
         Rough terrain favours clearance (avoid obstacles) over speed; slope
         favours heading (commit to direction) since changing course mid-climb
         can cause traction loss. Flat / transition use the default balance.
+
+        iter25: extend rough predict_time 1.2->2.0s and raise clearance_weight
+        0.35->0.55 so DWA can see further ahead and plan smoother detours
+        around tree clusters instead of braking at the first obstacle.
         """
         if t == TerrainType.ROUGH:
-            dwa.cfg.heading_weight = 0.45
-            dwa.cfg.clearance_weight = 0.35
-            dwa.cfg.velocity_weight = 0.20
+            dwa.cfg.heading_weight = 0.30
+            dwa.cfg.clearance_weight = 0.55
+            dwa.cfg.velocity_weight = 0.15
+            dwa.cfg.predict_time = 2.0
         elif t == TerrainType.SLOPE:
             dwa.cfg.heading_weight = 0.60
             dwa.cfg.clearance_weight = 0.20
             dwa.cfg.velocity_weight = 0.20
+            dwa.cfg.predict_time = 1.2
         else:  # FLAT / TRANSITION
             dwa.cfg.heading_weight = 0.65
             dwa.cfg.clearance_weight = 0.20
             dwa.cfg.velocity_weight = 0.15
+            dwa.cfg.predict_time = 1.2
 
     # Soft world-edge boundary — keeps the robot from sailing off the 20×20
     # terrain plane when the planner's path overshoots. Reactive PD-style
