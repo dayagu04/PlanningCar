@@ -1,0 +1,718 @@
+{
+  "iter": 20,
+  "tag": "iter20",
+  "metric_version": "v2",
+  "controllers": [
+    "adaptive_navigator",
+    "adaptive_navigator_baseline",
+    "astar_navigator"
+  ],
+  "terrains": [
+    "flat",
+    "slope",
+    "rough",
+    "transition"
+  ],
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "results": {
+    "flat": {
+      "adaptive_navigator": {
+        "success_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.9268002632877618,
+          "std": 0.06027897008792299,
+          "n": 5
+        },
+        "time_to_goal": {
+          "mean": 21.248,
+          "std": 3.073333044107,
+          "n": 5
+        },
+        "actual_path_length": {
+          "mean": 30.180755798515953,
+          "std": 5.4315287523896485,
+          "n": 5
+        },
+        "completion_fraction": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 14.0,
+          "std": 3.3466401061363023,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.11692807581685123,
+          "std": 0.027926366310337937,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.81196,
+          "std": 0.23651029237646304,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.9850533807829182,
+          "std": 0.014827520751601184,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 28863.936000000038,
+          "std": 167.2485931301081,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 7.0,
+          "std": 3.5777087639996634,
+          "n": 5
+        }
+      },
+      "adaptive_navigator_baseline": {
+        "success_rate": {
+          "mean": 0.2,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.9529035696254875,
+          "std": 0.0,
+          "n": 1
+        },
+        "time_to_goal": {
+          "mean": 21.76,
+          "std": 0.0,
+          "n": 1
+        },
+        "actual_path_length": {
+          "mean": 36.10091599291206,
+          "std": 0.0,
+          "n": 1
+        },
+        "completion_fraction": {
+          "mean": 0.45,
+          "std": 0.29154759474226505,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 291.0,
+          "std": 11.15347479487895,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.07853037681503058,
+          "std": 0.0002632007883280407,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.5959399999999999,
+          "std": 0.06427057180389796,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.9913591134493277,
+          "std": 0.011607222312383179,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 1302126.5920002148,
+          "std": 10461.39765483467,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 1.4,
+          "std": 0.4898979485566356,
+          "n": 5
+        }
+      },
+      "astar_navigator": {
+        "success_rate": {
+          "mean": 0.2,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.8770756689239845,
+          "std": 0.0,
+          "n": 1
+        },
+        "time_to_goal": {
+          "mean": 24.0,
+          "std": 0.0,
+          "n": 1
+        },
+        "actual_path_length": {
+          "mean": 39.22203401058801,
+          "std": 0.0,
+          "n": 1
+        },
+        "completion_fraction": {
+          "mean": 0.55,
+          "std": 0.2449489742783178,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 78.8,
+          "std": 3.9698866482558417,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.12395167523166846,
+          "std": 0.0004648895040852156,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.66368,
+          "std": 0.006172325331672038,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.9959684552935542,
+          "std": 0.007307469794795468,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 343769.28000000236,
+          "std": 2267.024889779913,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 62.8,
+          "std": 11.391224692718513,
+          "n": 5
+        }
+      }
+    },
+    "slope": {
+      "adaptive_navigator": {
+        "success_rate": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.7829687688078604,
+          "std": 0.17073004510930287,
+          "n": 5
+        },
+        "time_to_goal": {
+          "mean": 35.263999999999996,
+          "std": 18.603425060993473,
+          "n": 5
+        },
+        "actual_path_length": {
+          "mean": 39.9064908710334,
+          "std": 18.91617465101296,
+          "n": 5
+        },
+        "completion_fraction": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 9.2,
+          "std": 2.993325909419153,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.10673979010256551,
+          "std": 0.0174801305477758,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.8487570614359173,
+          "std": 0.20288226075051627,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.3601423487544484,
+          "std": 0.1308989486983362,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 26226.304000000015,
+          "std": 736.3911141669336,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 5.4,
+          "std": 2.4979991993593593,
+          "n": 5
+        }
+      },
+      "adaptive_navigator_baseline": {
+        "success_rate": {
+          "mean": 0.2,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.9236014130942989,
+          "std": 0.0,
+          "n": 1
+        },
+        "time_to_goal": {
+          "mean": 32.0,
+          "std": 0.0,
+          "n": 1
+        },
+        "actual_path_length": {
+          "mean": 37.24625279767027,
+          "std": 0.0,
+          "n": 1
+        },
+        "completion_fraction": {
+          "mean": 0.3,
+          "std": 0.36742346141747667,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 62.8,
+          "std": 76.7942706196237,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.024855970207439605,
+          "std": 0.029877875749379328,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.47912,
+          "std": 0.06299820314897876,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 703229.1840001302,
+          "std": 12214.300920162617,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 0.6,
+          "std": 0.48989794855663565,
+          "n": 5
+        }
+      },
+      "astar_navigator": {
+        "success_rate": {
+          "mean": 0.2,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.8554609482650616,
+          "std": 0.0,
+          "n": 1
+        },
+        "time_to_goal": {
+          "mean": 32.32,
+          "std": 0.0,
+          "n": 1
+        },
+        "actual_path_length": {
+          "mean": 40.2130474642506,
+          "std": 0.0,
+          "n": 1
+        },
+        "completion_fraction": {
+          "mean": 0.6,
+          "std": 0.25495097567963926,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 3.2,
+          "std": 0.7483314773547882,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.027608133680072804,
+          "std": 0.009173767498898495,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.5032970614359172,
+          "std": 0.06603092757557451,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 91157.24800000181,
+          "std": 4609.745063347646,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 0.6,
+          "std": 0.7999999999999999,
+          "n": 5
+        }
+      }
+    },
+    "rough": {
+      "adaptive_navigator": {
+        "success_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "time_to_goal": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "actual_path_length": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "completion_fraction": {
+          "mean": 0.35,
+          "std": 0.30000000000000004,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 6.0,
+          "std": 1.4142135623730951,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.067030485434067,
+          "std": 0.03892666716917715,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.9213741228718344,
+          "std": 0.5007234022420336,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.9601423487544485,
+          "std": 0.021517745847446222,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 17995.77599999996,
+          "std": 232.57201977881573,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 2.8,
+          "std": 1.7204650534085253,
+          "n": 5
+        }
+      },
+      "adaptive_navigator_baseline": {
+        "success_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "time_to_goal": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "actual_path_length": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "completion_fraction": {
+          "mean": 0.3,
+          "std": 0.24494897427831783,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 1.8,
+          "std": 1.32664991614216,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.0068940911758424775,
+          "std": 0.006772845670452939,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 1.0093,
+          "std": 0.6819322752297327,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 0.9996985815602837,
+          "std": 0.0006028368794326333,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 695992.5760001248,
+          "std": 7395.123510886324,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 2.8,
+          "std": 2.993325909419153,
+          "n": 5
+        }
+      },
+      "astar_navigator": {
+        "success_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "time_to_goal": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "actual_path_length": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "completion_fraction": {
+          "mean": 0.4,
+          "std": 0.20000000000000004,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 1.8,
+          "std": 1.469693845669907,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.016031496389417026,
+          "std": 0.007787988978572883,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.52042,
+          "std": 0.18520671046158124,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 80105.9840000013,
+          "std": 3775.3897508237897,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 1.4,
+          "std": 2.8,
+          "n": 5
+        }
+      }
+    },
+    "transition": {
+      "adaptive_navigator": {
+        "success_rate": {
+          "mean": 0.4,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": 0.729920375427201,
+          "std": 0.16725982644489779,
+          "n": 2
+        },
+        "time_to_goal": {
+          "mean": 22.72,
+          "std": 0.9599999999999991,
+          "n": 2
+        },
+        "actual_path_length": {
+          "mean": 30.216910801120633,
+          "std": 0.7530487342429399,
+          "n": 2
+        },
+        "completion_fraction": {
+          "mean": 0.6,
+          "std": 0.406201920231798,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 7.6,
+          "std": 2.244994432064365,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.066411485434067,
+          "std": 0.039980904548578965,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.84332,
+          "std": 0.31575153142938195,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 21339.19999999996,
+          "std": 3676.103865866716,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 3.6,
+          "std": 3.0724582991474434,
+          "n": 5
+        }
+      },
+      "adaptive_navigator_baseline": {
+        "success_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "time_to_goal": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "actual_path_length": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "completion_fraction": {
+          "mean": 0.3,
+          "std": 0.18708286933869708,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 2.2,
+          "std": 2.0396078054371136,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.0018067268293956392,
+          "std": 0.0013431638168302357,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.7213141228718347,
+          "std": 0.03900953391031565,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 701059.0720001286,
+          "std": 6174.987064212581,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 2.4,
+          "std": 0.4898979485566356,
+          "n": 5
+        }
+      },
+      "astar_navigator": {
+        "success_rate": {
+          "mean": 0.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "path_efficiency": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "time_to_goal": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "actual_path_length": {
+          "mean": null,
+          "std": null,
+          "n": 0
+        },
+        "completion_fraction": {
+          "mean": 0.35,
+          "std": 0.30000000000000004,
+          "n": 5
+        },
+        "skip_count": {
+          "mean": 0.8,
+          "std": 0.7483314773547883,
+          "n": 5
+        },
+        "cross_track_mean": {
+          "mean": 0.021609867128284506,
+          "std": 0.019760813357120342,
+          "n": 5
+        },
+        "cross_track_max": {
+          "mean": 0.64294,
+          "std": 0.353383353314782,
+          "n": 5
+        },
+        "classification_accuracy": {
+          "mean": 1.0,
+          "std": 0.0,
+          "n": 5
+        },
+        "energy_proxy": {
+          "mean": 84608.7680000014,
+          "std": 3874.737605972313,
+          "n": 5
+        },
+        "replan_count": {
+          "mean": 1.4,
+          "std": 0.8,
+          "n": 5
+        }
+      }
+    }
+  },
+  "note": "v2 re-analysis"
+}
